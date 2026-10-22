@@ -145,6 +145,17 @@
         <div class="row"><button class="act primary" id="annSave">Save announcement</button><span id="annMsg" class="muted"></span></div>
       </div>
       <div class="card">
+        <h3>App updates</h3>
+        <div class="muted">The app checks this when a user opens the dashboard. Below the minimum build number, the app is blocked until they update. Below the latest, it only shows a small "new version" banner. Leave minimum at 0 to never block. Raise the build number (versionCode in the app) with every release.</div>
+        <label>Minimum build number allowed (blocks older apps)</label><input id="appMin" inputmode="numeric" placeholder="e.g. 2">
+        <label>Latest build number</label><input id="appLatest" inputmode="numeric" placeholder="e.g. 3">
+        <label>Latest version name (shown to users)</label><input id="appLatestName" placeholder="e.g. 1.2.0">
+        <label>Download link (Google Drive link to the latest APK)</label><input id="appUrl" placeholder="https://...">
+        <label>Message shown to users (optional)</label><textarea id="appMsg" rows="2" placeholder="e.g. This update fixes billing issues. Please install it."></textarea>
+        <div class="row"><button class="act primary" id="appSave">Save app update settings</button><span id="appCfgMsg" class="muted"></span></div>
+        <div id="appVersions" class="muted" style="margin-top:10px"></div>
+      </div>
+      <div class="card">
         <h3>Reminders: renewals and approvals</h3>
         <div class="muted">Customers expiring within 7 days, expired in the last 30 days, or waiting for approval. Each button opens WhatsApp with the message filled in. You still press send.</div>
         <label>Message template (use {owner}, {business}, {date}, {status})</label>
@@ -192,7 +203,7 @@ const auth = firebase.auth();
 const db = firebase.database();
 
 const LIFETIME = 4102444800000, TRIAL_DAYS = 30, DAY = 86400000;
-let subs = [], tickets = [], payment = {}, usage = {}, payments = [], audit = [], businesses = {}, announcement = {};
+let subs = [], tickets = [], payment = {}, usage = {}, payments = [], audit = [], businesses = {}, announcement = {}, appCfg = {};
 let listeners = [], selected = new Set(), openId = null;
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -237,7 +248,8 @@ auth.onAuthStateChanged(async user => {
   listen('supportTickets', v => { tickets = Object.entries(v || {}).map(([id, t]) => ({ id, ...t })); renderAll(); });
   listen('config/payment', v => { payment = v || {}; renderPayment(); });
   listen('config/announcement', v => { announcement = v || {}; renderAnnouncement(); });
-  listen('usage', v => { usage = v || {}; renderAll(); });
+  listen('usage', v => { usage = v || {}; renderAll(); renderAppCfg(); });
+  listen('config/app', v => { appCfg = v || {}; renderAppCfg(); });
   listen('payments', v => { payments = Object.entries(v || {}).map(([id, p]) => ({ id, ...p })); renderRevenue(); if (openId) renderDetail(); });
   listen('auditLog', v => { audit = Object.entries(v || {}).map(([id, a]) => ({ id, ...a })); renderRevenue(); if (openId) renderDetail(); });
   loadBusinesses();
@@ -669,6 +681,24 @@ function renderAnnouncement() {
 $('annSave').onclick = () => {
   db.ref('config/announcement').set({ text: $('annText').value.trim(), active: $('annActive').checked && !!$('annText').value.trim(), updatedAt: Date.now() })
     .then(() => $('annMsg').textContent = 'Saved.').catch(err => $('annMsg').textContent = 'Failed: ' + err.message);
+};
+
+// ---------- app updates ----------
+function renderAppCfg() {
+  const set = (id, v) => { if (document.activeElement !== $(id)) $(id).value = (v === undefined || v === null) ? '' : v; };
+  set('appMin', appCfg.minVersionCode); set('appLatest', appCfg.latestVersionCode); set('appLatestName', appCfg.latestVersionName);
+  set('appUrl', appCfg.downloadUrl); set('appMsg', appCfg.message);
+  const counts = {};
+  Object.values(usage || {}).forEach(u => { const v = (u && u.appVersion) || 'unknown'; counts[v] = (counts[v] || 0) + 1; });
+  const parts = Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([v, n]) => esc(v) + ': ' + n + (n === 1 ? ' shop' : ' shops'));
+  $('appVersions').innerHTML = parts.length ? 'Versions in use: ' + parts.join(' · ') : 'No shop has reported a version yet.';
+}
+$('appSave').onclick = () => {
+  const num = id => { const n = parseInt($(id).value.trim(), 10); return isNaN(n) ? 0 : n; };
+  db.ref('config/app').set({
+    minVersionCode: num('appMin'), latestVersionCode: num('appLatest'), latestVersionName: $('appLatestName').value.trim(),
+    downloadUrl: $('appUrl').value.trim(), message: $('appMsg').value.trim(), updatedAt: Date.now()
+  }).then(() => $('appCfgMsg').textContent = 'Saved.').catch(err => $('appCfgMsg').textContent = 'Failed: ' + err.message);
 };
 
 // ---------- payment details ----------
