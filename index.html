@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Owuinüng POS Admin</title>
+<style>
+  :root { --green:#2e7d32; --bg:#f4f5f7; --card:#fff; --text:#1c1c1c; --mute:#6b7280; --line:#e5e7eb; --red:#c62828; --amber:#b26a00; --blue:#1565c0; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--text); }
+  header { background:var(--green); color:#fff; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  header h1 { font-size:17px; margin:0; }
+  header button { background:rgba(255,255,255,.18); color:#fff; border:0; padding:6px 10px; border-radius:8px; cursor:pointer; }
+  main { max-width:900px; margin:0 auto; padding:14px; }
+  .card { background:var(--card); border-radius:12px; padding:14px; margin-bottom:10px; box-shadow:0 1px 2px rgba(0,0,0,.06); }
+  .tabs { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+  .tabs button { flex:1; min-width:110px; padding:10px; border:1px solid var(--line); background:#fff; border-radius:10px; cursor:pointer; font-weight:600; }
+  .tabs button.on { background:var(--green); color:#fff; border-color:var(--green); }
+  input, select, textarea { width:100%; padding:10px; border:1px solid var(--line); border-radius:8px; font:inherit; margin-top:4px; background:#fff; color:var(--text); }
+  label { display:block; font-size:12px; color:var(--mute); margin-top:10px; }
+  button.act { padding:8px 10px; border:1px solid var(--line); background:#fff; border-radius:8px; cursor:pointer; font-size:13px; }
+  button.act:hover { background:#f0f0f0; }
+  button.primary { background:var(--green); color:#fff; border-color:var(--green); }
+  button.danger { color:var(--red); }
+  .row { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  .muted { color:var(--mute); font-size:12px; }
+  .pill { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:99px; }
+  .p-pending { background:#fff3e0; color:var(--amber); } .p-active { background:#e3f2fd; color:var(--blue); }
+  .p-life { background:#e8f5e9; color:var(--green); } .p-expired, .p-susp { background:#ffebee; color:var(--red); }
+  .stats { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+  .stat { background:#fff; border-radius:10px; padding:8px 12px; font-size:12px; color:var(--mute); }
+  .stat b { display:block; font-size:18px; color:var(--text); }
+  .msg { white-space:pre-wrap; background:#fafafa; border-radius:8px; padding:8px; margin-top:6px; font-size:14px; }
+  .reply { background:#e8f5e9; }
+  #login { max-width:360px; margin:60px auto; }
+  .err { color:var(--red); font-size:13px; margin-top:8px; }
+  .hidden { display:none; }
+  img.qr { width:160px; height:160px; object-fit:contain; background:#fff; border:1px solid var(--line); }
+  a { color:var(--blue); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Owuinüng POS — Admin</h1>
+  <div><span id="who" class="muted" style="color:#fff;opacity:.85"></span> <button id="logout" class="hidden">Log out</button></div>
+</header>
+
+<main>
+  <div id="login" class="card">
+    <h2 style="margin-top:0">Admin login</h2>
+    <label>Email</label><input id="email" type="email" autocomplete="username">
+    <label>Password</label><input id="password" type="password" autocomplete="current-password">
+    <div class="row"><button class="act primary" id="loginBtn">Log in</button></div>
+    <div id="loginErr" class="err"></div>
+  </div>
+
+  <div id="app" class="hidden">
+    <div class="tabs">
+      <button data-tab="customers" class="on">Customers</button>
+      <button data-tab="support">Support <span id="openBadge"></span></button>
+      <button data-tab="payment">Payment details</button>
+    </div>
+
+    <section id="tab-customers">
+      <div class="stats" id="stats"></div>
+      <div class="card">
+        <div class="row" style="margin-top:0">
+          <div style="flex:2;min-width:180px"><input id="search" placeholder="Search business, owner or email"></div>
+          <div style="flex:1;min-width:140px">
+            <select id="filter">
+              <option value="all">All</option>
+              <option value="pending">Awaiting approval</option>
+              <option value="active">Active (trial / paid)</option>
+              <option value="expired">Expired</option>
+              <option value="lifetime">Free for life</option>
+              <option value="suspended">Suspended</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div id="customerList"></div>
+    </section>
+
+    <section id="tab-support" class="hidden">
+      <div class="card">
+        <select id="ticketFilter">
+          <option value="open">Waiting for reply</option>
+          <option value="answered">Answered</option>
+          <option value="closed">Closed</option>
+          <option value="all">All</option>
+        </select>
+      </div>
+      <div id="ticketList"></div>
+    </section>
+
+    <section id="tab-payment" class="hidden">
+      <div class="card">
+        <h3 style="margin-top:0">Payment details shown to customers</h3>
+        <label>UPI ID</label><input id="pUpi">
+        <label>Name shown in the UPI app (your name)</label><input id="pPayee">
+        <label>Price text, e.g. ₹299 per month</label><input id="pPrice">
+        <label>Amount to pre-fill in the UPI app (number only, optional)</label><input id="pAmount" inputmode="decimal">
+        <label>Your WhatsApp number (country code + digits, no +)</label><input id="pWa" inputmode="numeric">
+        <div class="row"><button class="act primary" id="savePay">Save payment details</button></div>
+        <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+        <label>UPI QR code image</label>
+        <div id="qrBox" class="muted">No QR saved yet.</div>
+        <input type="file" id="qrFile" accept="image/*">
+        <div id="payMsg" class="muted" style="margin-top:8px"></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDDEfEuPjv1QMRczkJEmceambFQAXDQUwg",
+  authDomain: "owuinungpos.firebaseapp.com",
+  databaseURL: "https://owuinungpos-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "owuinungpos"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+
+const LIFETIME = 4102444800000;
+const TRIAL_DAYS = 30;
+const DAY = 86400000;
+
+let subs = [], tickets = [], payment = {};
+let listeners = [];
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtDate = ms => ms ? new Date(ms).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '-';
+
+// ---------- login ----------
+$('loginBtn').onclick = async () => {
+  $('loginErr').textContent = '';
+  try { await auth.signInWithEmailAndPassword($('email').value.trim(), $('password').value); }
+  catch (e) { $('loginErr').textContent = e.message; }
+};
+$('password').addEventListener('keydown', e => { if (e.key === 'Enter') $('loginBtn').click(); });
+$('logout').onclick = () => auth.signOut();
+
+auth.onAuthStateChanged(async user => {
+  listeners.forEach(([ref, fn]) => ref.off('value', fn)); listeners = [];
+  if (!user) { $('login').classList.remove('hidden'); $('app').classList.add('hidden'); $('logout').classList.add('hidden'); $('who').textContent=''; return; }
+  const snap = await db.ref('admins/' + user.uid).get().catch(() => null);
+  if (!snap || snap.val() !== true) {
+    $('loginErr').textContent = 'This account is not an admin.';
+    await auth.signOut();
+    return;
+  }
+  $('login').classList.add('hidden'); $('app').classList.remove('hidden'); $('logout').classList.remove('hidden');
+  $('who').textContent = user.email;
+  listen('subscriptions', v => { subs = Object.entries(v || {}).map(([id, s]) => ({ id, ...s })); renderCustomers(); renderTickets(); });
+  listen('supportTickets', v => { tickets = Object.entries(v || {}).map(([id, t]) => ({ id, ...t })); renderTickets(); renderCustomers(); });
+  listen('config/payment', v => { payment = v || {}; renderPayment(); });
+});
+
+function listen(path, cb) {
+  const ref = db.ref(path);
+  const fn = s => cb(s.val());
+  ref.on('value', fn, err => alert('Could not read ' + path + ': ' + err.message));
+  listeners.push([ref, fn]);
+}
+
+// ---------- tabs ----------
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b));
+  ['customers', 'support', 'payment'].forEach(t => $('tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
+});
+
+// ---------- customers ----------
+function statusOf(s) {
+  const now = Date.now(), v = s.validUntil || 0;
+  if (s.plan === 'lifetime') return 'lifetime';
+  if (s.plan === 'suspended') return 'suspended';
+  if (s.plan === 'pending') return 'pending';
+  return v > now ? 'active' : 'expired';
+}
+const LABEL = { pending:'Awaiting approval', active:'Active', expired:'Expired', lifetime:'Free for life', suspended:'Suspended' };
+const PILL = { pending:'p-pending', active:'p-active', expired:'p-expired', lifetime:'p-life', suspended:'p-susp' };
+
+function renderCustomers() {
+  const counts = { all: subs.length, pending:0, active:0, expired:0, lifetime:0, suspended:0 };
+  subs.forEach(s => counts[statusOf(s)]++);
+  $('stats').innerHTML = [['Total', counts.all], ['Awaiting', counts.pending], ['Active', counts.active], ['Expired', counts.expired], ['Free for life', counts.lifetime], ['Suspended', counts.suspended]]
+    .map(([k, v]) => `<div class="stat"><b>${v}</b>${k}</div>`).join('');
+  const q = $('search').value.trim().toLowerCase(), f = $('filter').value;
+  const order = { pending:0, expired:1, active:2, suspended:3, lifetime:4 };
+  const list = subs.filter(s => (f === 'all' || statusOf(s) === f) &&
+      (!q || [s.businessName, s.ownerName, s.ownerEmail].join(' ').toLowerCase().includes(q)))
+    .sort((a, b) => order[statusOf(a)] - order[statusOf(b)] || (a.validUntil || 0) - (b.validUntil || 0));
+  $('customerList').innerHTML = list.length ? list.map(customerCard).join('') : '<div class="card muted">No businesses match.</div>';
+}
+$('search').oninput = renderCustomers; $('filter').onchange = renderCustomers;
+
+function customerCard(s) {
+  const st = statusOf(s);
+  const open = tickets.filter(t => t.businessId === s.id && t.status === 'open').length;
+  const until = st === 'lifetime' ? '' : (st === 'pending' ? `Instant access ${s.validUntil > Date.now() ? 'ends' : 'ended'} ${fmtDate(s.validUntil)}` : `${s.validUntil > Date.now() ? 'Valid until' : 'Ended'} ${fmtDate(s.validUntil)}`);
+  const pendingBtns = st === 'pending' ? `
+      <button class="act primary" data-a="approve" data-id="${esc(s.id)}">Approve ${TRIAL_DAYS}-day trial</button>
+      <button class="act danger" data-a="reject" data-id="${esc(s.id)}">Reject</button>` : '';
+  return `<div class="card">
+    <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
+      <b>${esc(s.businessName || '(unnamed)')}</b>
+      <span class="pill ${PILL[st]}">${LABEL[st]}</span>
+    </div>
+    <div class="muted">${esc(s.ownerName)} • <a href="mailto:${esc(s.ownerEmail)}">${esc(s.ownerEmail)}</a></div>
+    <div class="muted">${esc(until)}${open ? ` • <b style="color:var(--amber)">${open} open ticket${open > 1 ? 's' : ''}</b>` : ''}</div>
+    ${s.adminNote ? `<div class="msg">${esc(s.adminNote)}</div>` : ''}
+    <div class="row">
+      ${pendingBtns}
+      <button class="act" data-a="ext1" data-id="${esc(s.id)}">+1 mo</button>
+      <button class="act" data-a="ext3" data-id="${esc(s.id)}">+3 mo</button>
+      <button class="act" data-a="ext12" data-id="${esc(s.id)}">+12 mo</button>
+      <button class="act" data-a="life" data-id="${esc(s.id)}">Free for life</button>
+      <button class="act danger" data-a="susp" data-id="${esc(s.id)}">Suspend</button>
+      <button class="act" data-a="note" data-id="${esc(s.id)}">Note</button>
+      <button class="act" data-a="copy" data-id="${esc(s.id)}">Copy business ID</button>
+    </div>
+  </div>`;
+}
+
+$('customerList').addEventListener('click', async e => {
+  const b = e.target.closest('button[data-a]'); if (!b) return;
+  const s = subs.find(x => x.id === b.dataset.id); if (!s) return;
+  const a = b.dataset.a, now = Date.now(), name = s.businessName || s.id;
+  const upd = (extra, msg) => {
+    if (!confirm(msg + '\n\n' + name)) return;
+    db.ref('subscriptions/' + s.id).update({ ...extra, updatedAt: now, updatedBy: auth.currentUser.uid })
+      .catch(err => alert('Failed: ' + err.message));
+  };
+  const extend = months => {
+    const base = (s.plan === 'lifetime' || s.plan === 'suspended' || s.plan === 'pending') ? now : Math.max(now, s.validUntil || 0);
+    const d = new Date(base); d.setMonth(d.getMonth() + months);
+    upd({ plan: 'paid', validUntil: d.getTime() }, `Extend by ${months} month${months > 1 ? 's' : ''}? New end date: ${fmtDate(d.getTime())}`);
+  };
+  if (a === 'approve') upd({ plan: 'trial', validUntil: now + TRIAL_DAYS * DAY }, `Approve a ${TRIAL_DAYS}-day free trial?`);
+  else if (a === 'reject') upd({ plan: 'suspended', validUntil: 0 }, 'Reject this account? They can still view data but not make changes.');
+  else if (a === 'ext1') extend(1);
+  else if (a === 'ext3') extend(3);
+  else if (a === 'ext12') extend(12);
+  else if (a === 'life') upd({ plan: 'lifetime', validUntil: LIFETIME }, 'Make this business free for life?');
+  else if (a === 'susp') upd({ plan: 'suspended', validUntil: 0 }, 'Suspend this business? They can still view data but not make changes.');
+  else if (a === 'note') {
+    const n = prompt('Private note about ' + name + ' (only you can see this):', s.adminNote || '');
+    if (n !== null) db.ref('subscriptions/' + s.id).update({ adminNote: n.trim(), updatedAt: now, updatedBy: auth.currentUser.uid }).catch(err => alert('Failed: ' + err.message));
+  }
+  else if (a === 'copy') { try { await navigator.clipboard.writeText(s.id); alert('Copied: ' + s.id); } catch (_) { prompt('Copy this business ID:', s.id); } }
+});
+
+// ---------- support ----------
+function renderTickets() {
+  // Don't wipe a reply the admin is typing when new data arrives.
+  const ae = document.activeElement;
+  if (ae && ae.tagName === 'TEXTAREA' && $('ticketList').contains(ae)) return;
+  const open = tickets.filter(t => t.status === 'open').length;
+  $('openBadge').textContent = open ? `(${open})` : '';
+  const f = $('ticketFilter').value;
+  const list = tickets.filter(t => f === 'all' || t.status === f).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  $('ticketList').innerHTML = list.length ? list.map(ticketCard).join('') : '<div class="card muted">Nothing here.</div>';
+}
+$('ticketFilter').onchange = renderTickets;
+
+function ticketCard(t) {
+  const wa = (t.phone || '').replace(/\D/g, '');
+  const sub = subs.find(s => s.id === t.businessId);
+  const st = sub ? LABEL[statusOf(sub)] : 'unknown plan';
+  return `<div class="card" data-tid="${esc(t.id)}">
+    <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
+      <b>${esc(t.subject)}</b>
+      <span class="pill ${t.status === 'open' ? 'p-pending' : t.status === 'answered' ? 'p-life' : 'p-susp'}">${esc(t.status)}</span>
+    </div>
+    <div class="muted">${esc(t.businessName)} (${esc(st)}) • ${esc(t.userName)} • <a href="mailto:${esc(t.userEmail)}">${esc(t.userEmail)}</a>
+      ${wa ? ` • <a target="_blank" rel="noopener" href="https://wa.me/${wa}">WhatsApp ${esc(t.phone)}</a>` : ''} • ${fmtDate(t.createdAt)}</div>
+    <div class="msg">${esc(t.message)}</div>
+    ${t.adminReply ? `<div class="msg reply"><b>Your reply</b> (${fmtDate(t.repliedAt)}):\n${esc(t.adminReply)}</div>` : ''}
+    <textarea rows="3" placeholder="Write a reply that the customer will see in the app">${t.status === 'open' ? '' : ''}</textarea>
+    <div class="row">
+      <button class="act primary" data-t="reply">Send reply</button>
+      ${t.status !== 'closed' ? '<button class="act" data-t="close">Close</button>' : '<button class="act" data-t="reopen">Reopen</button>'}
+      <button class="act danger" data-t="delete">Delete</button>
+    </div>
+  </div>`;
+}
+$('ticketList').addEventListener('click', e => {
+  const b = e.target.closest('button[data-t]'); if (!b) return;
+  const card = b.closest('[data-tid]'), id = card.dataset.tid, ref = db.ref('supportTickets/' + id);
+  const fail = err => alert('Failed: ' + err.message);
+  if (b.dataset.t === 'reply') {
+    const text = card.querySelector('textarea').value.trim();
+    if (!text) return alert('Write a reply first.');
+    ref.update({ adminReply: text, repliedAt: Date.now(), status: 'answered' }).catch(fail);
+  } else if (b.dataset.t === 'close') ref.update({ status: 'closed' }).catch(fail);
+  else if (b.dataset.t === 'reopen') ref.update({ status: 'open' }).catch(fail);
+  else if (b.dataset.t === 'delete') { if (confirm('Delete this ticket permanently?')) ref.remove().catch(fail); }
+});
+
+// ---------- payment details ----------
+function renderPayment() {
+  const set = (id, v) => { if (document.activeElement !== $(id)) $(id).value = v || ''; };
+  set('pUpi', payment.upi); set('pPayee', payment.payee); set('pPrice', payment.price); set('pAmount', payment.amount); set('pWa', payment.whatsapp);
+  $('qrBox').innerHTML = payment.qr ? `<img class="qr" alt="UPI QR" src="data:image/png;base64,${payment.qr}">` : 'No QR saved yet.';
+}
+$('savePay').onclick = () => {
+  db.ref('config/payment').update({
+    upi: $('pUpi').value.trim(), payee: $('pPayee').value.trim(), price: $('pPrice').value.trim(),
+    amount: $('pAmount').value.trim(), whatsapp: $('pWa').value.replace(/\D/g, '')
+  }).then(() => $('payMsg').textContent = 'Saved.').catch(err => $('payMsg').textContent = 'Failed: ' + err.message);
+};
+$('qrFile').onchange = e => {
+  const file = e.target.files[0]; if (!file) return;
+  const img = new Image();
+  img.onload = () => {
+    const max = 720, scale = Math.min(1, max / Math.max(img.width, img.height));
+    const c = document.createElement('canvas'); c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    const data = c.toDataURL('image/png').split(',')[1];
+    db.ref('config/payment/qr').set(data).then(() => $('payMsg').textContent = 'QR saved.').catch(err => $('payMsg').textContent = 'Failed: ' + err.message);
+  };
+  img.onerror = () => $('payMsg').textContent = 'Could not read that image.';
+  img.src = URL.createObjectURL(file);
+};
+</script>
+</body>
+</html>
