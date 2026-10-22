@@ -28,6 +28,7 @@
   .grow { flex:1; min-width:150px; }
   .muted { color:var(--mute); font-size:12px; }
   .pill { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:99px; white-space:nowrap; }
+  .p-free { background:#ede7f6; color:#4527a0; }
   .p-pending { background:#fff3e0; color:var(--amber); } .p-active { background:#e3f2fd; color:var(--blue); }
   .p-life { background:#e8f5e9; color:var(--green); } .p-expired, .p-susp { background:#ffebee; color:var(--red); }
   .stats { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
@@ -90,7 +91,8 @@
           <div class="grow">
             <select id="filter">
               <option value="all">All</option>
-              <option value="pending">Awaiting approval</option>
+              <option value="free">Free plan</option>
+              <option value="addon">Extra business: awaiting payment</option>
               <option value="active">Active (trial / paid)</option>
               <option value="expiring">Expiring in 7 days</option>
               <option value="expired">Expired</option>
@@ -159,6 +161,7 @@
         <label>Name shown in the UPI app (your name)</label><input id="pPayee">
         <label>Price text, e.g. ₹299 per month</label><input id="pPrice">
         <label>Amount to pre-fill in the UPI app (number only, per month; also pre-fills payment records)</label><input id="pAmount" inputmode="decimal">
+        <label>Extra business price per month (number only, e.g. 199)</label><input id="pAddon" inputmode="decimal">
         <label>Your WhatsApp number (country code + digits, no +)</label><input id="pWa" inputmode="numeric">
         <div class="row"><button class="act primary" id="savePay">Save payment details</button></div>
         <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
@@ -265,10 +268,13 @@ function statusOf(s) {
   if (s.plan === 'lifetime') return 'lifetime';
   if (s.plan === 'suspended') return 'suspended';
   if (s.plan === 'pending') return 'pending';
-  return v > now ? 'active' : 'expired';
+  if (s.plan === 'addon') return 'addon';
+  if (s.plan === 'free' || s.plan === 'pending') return 'free';
+  if (v > now) return 'active';
+  return s.extra ? 'expired' : 'free'; // a normal business whose paid period ended falls back to the Free plan
 }
-const LABEL = { pending:'Awaiting approval', active:'Active', expired:'Expired', lifetime:'Free for life', suspended:'Suspended' };
-const PILL = { pending:'p-pending', active:'p-active', expired:'p-expired', lifetime:'p-life', suspended:'p-susp' };
+const LABEL = { free:'Free plan', addon:'Extra business: awaiting payment', pending:'Awaiting approval', active:'Active', expired:'Expired', lifetime:'Free for life', suspended:'Suspended' };
+const PILL = { free:'p-free', addon:'p-pending', pending:'p-pending', active:'p-active', expired:'p-expired', lifetime:'p-life', suspended:'p-susp' };
 function bizOf(id) { return businesses[id] || {}; }
 function ownerPhone(id) {
   const b = bizOf(id);
@@ -276,7 +282,8 @@ function ownerPhone(id) {
   const m = Object.values(b.members || {}).find(x => x && x.role === 'OWNER');
   return (m && m.phone) || '';
 }
-function planText(s) { const st = statusOf(s); return st === 'lifetime' ? 'free for life' : st === 'pending' ? 'awaiting approval' : (s.validUntil > Date.now() ? 'valid until ' : 'ended on ') + fmtD(s.validUntil); }
+function lapsed(s) { return (s.plan === 'paid' || s.plan === 'trial') && (s.validUntil || 0) <= Date.now(); }
+function planText(s) { const st = statusOf(s); return st === 'lifetime' ? 'free for life' : st === 'addon' ? 'extra business, awaiting payment' : (st === 'free' && !lapsed(s)) ? 'on the free plan' : (s.validUntil > Date.now() ? 'valid until ' : 'ended on ') + fmtD(s.validUntil); }
 function lastActive(id) { return (usage[id] || {}).lastActiveAt || 0; }
 
 // ---------- customers ----------
@@ -288,12 +295,12 @@ function matchesFilter(s, f) {
   return st === f;
 }
 function renderCustomers() {
-  const counts = { total: subs.length, pending:0, active:0, expired:0, lifetime:0, suspended:0 };
+  const counts = { total: subs.length, free:0, addon:0, pending:0, active:0, expired:0, lifetime:0, suspended:0 };
   subs.forEach(s => counts[statusOf(s)]++);
-  $('stats').innerHTML = [['Total', counts.total], ['Awaiting', counts.pending], ['Active', counts.active], ['Expired', counts.expired], ['Free for life', counts.lifetime], ['Suspended', counts.suspended]]
+  $('stats').innerHTML = [['Total', counts.total], ['Free plan', counts.free], ['Extra biz unpaid', counts.addon], ['Active', counts.active], ['Expired', counts.expired], ['Free for life', counts.lifetime], ['Suspended', counts.suspended]]
     .map(([k, v]) => `<div class="stat"><b>${v}</b>${k}</div>`).join('');
   const q = $('search').value.trim().toLowerCase(), f = $('filter').value;
-  const order = { pending:0, expired:1, active:2, suspended:3, lifetime:4 };
+  const order = { addon:0, pending:0, expired:1, active:2, free:3, suspended:4, lifetime:5 };
   const list = subs.filter(s => matchesFilter(s, f) &&
       (!q || [s.businessName, s.ownerName, s.ownerEmail, ownerPhone(s.id)].join(' ').toLowerCase().includes(q)))
     .sort((a, b) => order[statusOf(a)] - order[statusOf(b)] || (a.validUntil || 0) - (b.validUntil || 0));
@@ -381,13 +388,13 @@ function approve(id) {
   const s = subs.find(x => x.id === id); if (!s) return;
   if (confirm(`Approve a ${TRIAL_DAYS}-day free trial?\n\n${s.businessName}`)) applyChange(id, { plan: 'trial', validUntil: Date.now() + TRIAL_DAYS * DAY }, 'approve_trial', `${TRIAL_DAYS}-day trial approved`).catch(e => alert(e.message));
 }
-function extendBase(s) { const now = Date.now(); return (s.plan === 'lifetime' || s.plan === 'suspended' || s.plan === 'pending') ? now : Math.max(now, s.validUntil || 0); }
+function extendBase(s) { const now = Date.now(); return (s.plan === 'lifetime' || s.plan === 'suspended' || s.plan === 'pending' || s.plan === 'addon' || s.plan === 'free') ? now : Math.max(now, s.validUntil || 0); }
 
 // ---------- payment dialog (extend + record) ----------
 function openPayDlg(id, months) {
   const s = subs.find(x => x.id === id); if (!s) return;
   const d = new Date(extendBase(s)); d.setMonth(d.getMonth() + months);
-  const newEnd = d.getTime(), amt = payment.amount ? (Number(payment.amount) * months) : '';
+  const newEnd = d.getTime(), unit = s.extra || s.plan === 'addon' ? payment.addonAmount : payment.amount, amt = unit ? (Number(unit) * months) : '';
   $('pdTitle').textContent = `Extend ${months} month${months > 1 ? 's' : ''} — ${s.businessName}`;
   $('pdBody').innerHTML = `
     <div class="card">
@@ -639,12 +646,12 @@ $('tpl').value = safe(() => localStorage.getItem('owuinungTpl'), null) || DEFAUL
 $('tpl').oninput = () => { safe(() => localStorage.setItem('owuinungTpl', $('tpl').value)); renderReminders(); };
 function renderReminders() {
   const now = Date.now();
-  const list = subs.filter(s => { const st = statusOf(s); return st === 'pending' || (st === 'active' && s.validUntil - now <= 7 * DAY) || (st === 'expired' && now - s.validUntil <= 30 * DAY); })
+  const list = subs.filter(s => { const st = statusOf(s); return st === 'addon' || (st === 'active' && s.validUntil - now <= 7 * DAY) || ((st === 'expired' || lapsed(s)) && now - s.validUntil <= 30 * DAY); })
     .sort((a, b) => (a.validUntil || 0) - (b.validUntil || 0));
   $('reminders').innerHTML = list.length ? list.map(s => {
     const st = statusOf(s);
-    const status = st === 'pending' ? 'is waiting for approval' : st === 'expired' ? 'ended on' : 'ends on';
-    const date = st === 'pending' ? '' : fmtD(s.validUntil);
+    const status = st === 'addon' ? 'is waiting for the extra-business payment' : (st === 'expired' || lapsed(s)) ? 'ended on' : 'ends on';
+    const date = (st === 'addon') ? '' : fmtD(s.validUntil);
     const text = $('tpl').value.replace(/\{owner\}/g, s.ownerName || '').replace(/\{business\}/g, s.businessName || '').replace(/\{status\}/g, status).replace(/\{date\}/g, date).replace(/\s+\./g, '.').trim();
     const link = waLink(ownerPhone(s.id), text);
     return `<div class="row" style="border-bottom:1px solid var(--line);padding:6px 0;margin:0">
@@ -667,13 +674,13 @@ $('annSave').onclick = () => {
 // ---------- payment details ----------
 function renderPayment() {
   const set = (id, v) => { if (document.activeElement !== $(id)) $(id).value = v || ''; };
-  set('pUpi', payment.upi); set('pPayee', payment.payee); set('pPrice', payment.price); set('pAmount', payment.amount); set('pWa', payment.whatsapp);
+  set('pUpi', payment.upi); set('pPayee', payment.payee); set('pPrice', payment.price); set('pAmount', payment.amount); set('pAddon', payment.addonAmount); set('pWa', payment.whatsapp);
   $('qrBox').innerHTML = payment.qr ? `<img class="qr" alt="UPI QR" src="data:image/png;base64,${payment.qr}">` : 'No QR saved yet.';
 }
 $('savePay').onclick = () => {
   db.ref('config/payment').update({
     upi: $('pUpi').value.trim(), payee: $('pPayee').value.trim(), price: $('pPrice').value.trim(),
-    amount: $('pAmount').value.trim(), whatsapp: digits($('pWa').value)
+    amount: $('pAmount').value.trim(), addonAmount: $('pAddon').value.trim(), whatsapp: digits($('pWa').value)
   }).then(() => $('payMsg').textContent = 'Saved.').catch(err => $('payMsg').textContent = 'Failed: ' + err.message);
 };
 $('qrFile').onchange = e => {
