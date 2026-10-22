@@ -9,41 +9,58 @@
   :root { --green:#2e7d32; --bg:#f4f5f7; --card:#fff; --text:#1c1c1c; --mute:#6b7280; --line:#e5e7eb; --red:#c62828; --amber:#b26a00; --blue:#1565c0; }
   * { box-sizing: border-box; }
   body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--text); }
-  header { background:var(--green); color:#fff; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  header { background:var(--green); color:#fff; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; gap:8px; position:sticky; top:0; z-index:5; }
   header h1 { font-size:17px; margin:0; }
   header button { background:rgba(255,255,255,.18); color:#fff; border:0; padding:6px 10px; border-radius:8px; cursor:pointer; }
-  main { max-width:900px; margin:0 auto; padding:14px; }
+  main { max-width:1000px; margin:0 auto; padding:14px; }
   .card { background:var(--card); border-radius:12px; padding:14px; margin-bottom:10px; box-shadow:0 1px 2px rgba(0,0,0,.06); }
   .tabs { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
-  .tabs button { flex:1; min-width:110px; padding:10px; border:1px solid var(--line); background:#fff; border-radius:10px; cursor:pointer; font-weight:600; }
+  .tabs button { flex:1; min-width:100px; padding:10px; border:1px solid var(--line); background:#fff; border-radius:10px; cursor:pointer; font-weight:600; }
   .tabs button.on { background:var(--green); color:#fff; border-color:var(--green); }
   input, select, textarea { width:100%; padding:10px; border:1px solid var(--line); border-radius:8px; font:inherit; margin-top:4px; background:#fff; color:var(--text); }
+  input[type=checkbox] { width:auto; margin:0 8px 0 0; }
   label { display:block; font-size:12px; color:var(--mute); margin-top:10px; }
-  button.act { padding:8px 10px; border:1px solid var(--line); background:#fff; border-radius:8px; cursor:pointer; font-size:13px; }
+  button.act { padding:8px 10px; border:1px solid var(--line); background:#fff; border-radius:8px; cursor:pointer; font-size:13px; color:var(--text); }
   button.act:hover { background:#f0f0f0; }
-  button.primary { background:var(--green); color:#fff; border-color:var(--green); }
+  button.primary { background:var(--green); color:#fff; border-color:var(--green); } button.primary:hover { background:#256628; }
   button.danger { color:var(--red); }
-  .row { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  .row { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; align-items:center; }
+  .grow { flex:1; min-width:150px; }
   .muted { color:var(--mute); font-size:12px; }
-  .pill { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:99px; }
+  .pill { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:99px; white-space:nowrap; }
   .p-pending { background:#fff3e0; color:var(--amber); } .p-active { background:#e3f2fd; color:var(--blue); }
   .p-life { background:#e8f5e9; color:var(--green); } .p-expired, .p-susp { background:#ffebee; color:var(--red); }
   .stats { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
-  .stat { background:#fff; border-radius:10px; padding:8px 12px; font-size:12px; color:var(--mute); }
+  .stat { background:#fff; border-radius:10px; padding:8px 12px; font-size:12px; color:var(--mute); min-width:90px; }
   .stat b { display:block; font-size:18px; color:var(--text); }
   .msg { white-space:pre-wrap; background:#fafafa; border-radius:8px; padding:8px; margin-top:6px; font-size:14px; }
   .reply { background:#e8f5e9; }
   #login { max-width:360px; margin:60px auto; }
   .err { color:var(--red); font-size:13px; margin-top:8px; }
-  .hidden { display:none; }
+  .hidden { display:none !important; }
   img.qr { width:160px; height:160px; object-fit:contain; background:#fff; border:1px solid var(--line); }
   a { color:var(--blue); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:8px; }
+  .kv { background:#fafafa; border-radius:8px; padding:8px; font-size:13px; word-break:break-word; }
+  .kv span { display:block; font-size:11px; color:var(--mute); }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--mute); font-weight:600; position:sticky; top:0; background:#fff; }
+  .scroll { max-height:340px; overflow:auto; border:1px solid var(--line); border-radius:8px; }
+  dialog { border:0; border-radius:14px; padding:0; width:min(940px, 96vw); max-height:92vh; box-shadow:0 10px 40px rgba(0,0,0,.3); }
+  dialog::backdrop { background:rgba(0,0,0,.45); }
+  .dhead { display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:var(--green); color:#fff; position:sticky; top:0; z-index:2; }
+  .dhead button { background:rgba(255,255,255,.2); color:#fff; border:0; border-radius:8px; padding:6px 10px; cursor:pointer; }
+  .dbody { padding:14px 16px 20px; overflow:auto; max-height:calc(92vh - 52px); background:var(--bg); }
+  h3 { margin:0 0 6px; font-size:14px; }
+  .sel { display:flex; align-items:center; }
+  #bulk { position:sticky; top:50px; z-index:4; }
 </style>
 </head>
 <body>
 <header>
   <h1>Owuinüng POS — Admin</h1>
-  <div><span id="who" class="muted" style="color:#fff;opacity:.85"></span> <button id="logout" class="hidden">Log out</button></div>
+  <div><span id="who" class="muted" style="color:#fff;opacity:.85"></span> <button id="refresh" class="hidden">Reload</button> <button id="logout" class="hidden">Log out</button></div>
 </header>
 
 <main>
@@ -59,29 +76,37 @@
     <div class="tabs">
       <button data-tab="customers" class="on">Customers</button>
       <button data-tab="support">Support <span id="openBadge"></span></button>
+      <button data-tab="revenue">Payments</button>
+      <button data-tab="broadcast">Reach out</button>
       <button data-tab="payment">Payment details</button>
     </div>
 
+    <!-- CUSTOMERS -->
     <section id="tab-customers">
       <div class="stats" id="stats"></div>
       <div class="card">
         <div class="row" style="margin-top:0">
-          <div style="flex:2;min-width:180px"><input id="search" placeholder="Search business, owner or email"></div>
-          <div style="flex:1;min-width:140px">
+          <div class="grow" style="flex:2"><input id="search" placeholder="Search business, owner, email or phone"></div>
+          <div class="grow">
             <select id="filter">
               <option value="all">All</option>
               <option value="pending">Awaiting approval</option>
               <option value="active">Active (trial / paid)</option>
+              <option value="expiring">Expiring in 7 days</option>
               <option value="expired">Expired</option>
               <option value="lifetime">Free for life</option>
               <option value="suspended">Suspended</option>
+              <option value="inactive">Not used in 14+ days</option>
             </select>
           </div>
+          <button class="act" id="exportCustomers">Export CSV</button>
         </div>
       </div>
+      <div id="bulk" class="card hidden"></div>
       <div id="customerList"></div>
     </section>
 
+    <!-- SUPPORT -->
     <section id="tab-support" class="hidden">
       <div class="card">
         <select id="ticketFilter">
@@ -94,13 +119,46 @@
       <div id="ticketList"></div>
     </section>
 
+    <!-- PAYMENTS / REVENUE -->
+    <section id="tab-revenue" class="hidden">
+      <div class="stats" id="revStats"></div>
+      <div class="card"><h3>Revenue by month</h3><div id="revMonths"></div></div>
+      <div class="card">
+        <div class="row" style="margin-top:0">
+          <div class="grow" style="flex:2"><input id="paySearch" placeholder="Search payments by business or reference"></div>
+          <button class="act" id="exportPayments">Export CSV</button>
+        </div>
+        <div class="scroll" style="margin-top:8px;max-height:420px"><table id="payTable"></table></div>
+      </div>
+      <div class="card"><h3>Recent changes (audit log)</h3><div class="scroll" style="max-height:320px"><table id="auditTable"></table></div></div>
+    </section>
+
+    <!-- REACH OUT -->
+    <section id="tab-broadcast" class="hidden">
+      <div class="card">
+        <h3>Announcement to every customer's app</h3>
+        <div class="muted">Shows as a blue banner on the dashboard of every business. Users can dismiss it for the session.</div>
+        <textarea id="annText" rows="3" placeholder="e.g. The app will be updated tonight 10 PM. Please keep your phone online."></textarea>
+        <label class="sel"><input type="checkbox" id="annActive"> Show this announcement</label>
+        <div class="row"><button class="act primary" id="annSave">Save announcement</button><span id="annMsg" class="muted"></span></div>
+      </div>
+      <div class="card">
+        <h3>Reminders: renewals and approvals</h3>
+        <div class="muted">Customers expiring within 7 days, expired in the last 30 days, or waiting for approval. Each button opens WhatsApp with the message filled in. You still press send.</div>
+        <label>Message template (use {owner}, {business}, {date}, {status})</label>
+        <textarea id="tpl" rows="4"></textarea>
+        <div id="reminders" style="margin-top:10px"></div>
+      </div>
+    </section>
+
+    <!-- PAYMENT DETAILS -->
     <section id="tab-payment" class="hidden">
       <div class="card">
-        <h3 style="margin-top:0">Payment details shown to customers</h3>
+        <h3>Payment details shown to customers</h3>
         <label>UPI ID</label><input id="pUpi">
         <label>Name shown in the UPI app (your name)</label><input id="pPayee">
         <label>Price text, e.g. ₹299 per month</label><input id="pPrice">
-        <label>Amount to pre-fill in the UPI app (number only, optional)</label><input id="pAmount" inputmode="decimal">
+        <label>Amount to pre-fill in the UPI app (number only, per month; also pre-fills payment records)</label><input id="pAmount" inputmode="decimal">
         <label>Your WhatsApp number (country code + digits, no +)</label><input id="pWa" inputmode="numeric">
         <div class="row"><button class="act primary" id="savePay">Save payment details</button></div>
         <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
@@ -112,6 +170,9 @@
     </section>
   </div>
 </main>
+
+<dialog id="detail"><div class="dhead"><b id="dTitle"></b><button id="dClose">Close</button></div><div class="dbody" id="dBody"></div></dialog>
+<dialog id="payDlg"><div class="dhead"><b id="pdTitle">Record payment</b><button id="pdClose">Close</button></div><div class="dbody" id="pdBody"></div></dialog>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -127,15 +188,26 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-const LIFETIME = 4102444800000;
-const TRIAL_DAYS = 30;
-const DAY = 86400000;
-
-let subs = [], tickets = [], payment = {};
-let listeners = [];
+const LIFETIME = 4102444800000, TRIAL_DAYS = 30, DAY = 86400000;
+let subs = [], tickets = [], payment = {}, usage = {}, payments = [], audit = [], businesses = {}, announcement = {};
+let listeners = [], selected = new Set(), openId = null;
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const fmtDate = ms => ms ? new Date(ms).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '-';
+const fmtDT = ms => ms ? new Date(ms).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '-';
+const fmtD = ms => ms ? new Date(ms).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) : '-';
+const money = n => '₹' + (Number(n) || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+const digits = s => String(s || '').replace(/\D/g, '');
+const waLink = (phone, text) => { let d = digits(phone); if (d.length === 10) d = '91' + d; return d ? `https://wa.me/${d}?text=${encodeURIComponent(text || '')}` : ''; };
+const safe = (fn, fallback) => { try { return fn(); } catch (_) { return fallback; } };
+
+function toCsv(rows) {
+  return '﻿' + rows.map(r => r.map(v => { v = v == null ? '' : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(',')).join('\n');
+}
+function download(name, text) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove();
+}
 
 // ---------- login ----------
 $('loginBtn').onclick = async () => {
@@ -145,37 +217,49 @@ $('loginBtn').onclick = async () => {
 };
 $('password').addEventListener('keydown', e => { if (e.key === 'Enter') $('loginBtn').click(); });
 $('logout').onclick = () => auth.signOut();
+$('refresh').onclick = () => loadBusinesses();
 
 auth.onAuthStateChanged(async user => {
   listeners.forEach(([ref, fn]) => ref.off('value', fn)); listeners = [];
-  if (!user) { $('login').classList.remove('hidden'); $('app').classList.add('hidden'); $('logout').classList.add('hidden'); $('who').textContent=''; return; }
+  if (!user) { $('login').classList.remove('hidden'); $('app').classList.add('hidden'); $('logout').classList.add('hidden'); $('refresh').classList.add('hidden'); $('who').textContent=''; return; }
   const snap = await db.ref('admins/' + user.uid).get().catch(() => null);
   if (!snap || snap.val() !== true) {
     $('loginErr').textContent = 'This account is not an admin.';
     await auth.signOut();
     return;
   }
-  $('login').classList.add('hidden'); $('app').classList.remove('hidden'); $('logout').classList.remove('hidden');
+  $('login').classList.add('hidden'); $('app').classList.remove('hidden'); $('logout').classList.remove('hidden'); $('refresh').classList.remove('hidden');
   $('who').textContent = user.email;
-  listen('subscriptions', v => { subs = Object.entries(v || {}).map(([id, s]) => ({ id, ...s })); renderCustomers(); renderTickets(); });
-  listen('supportTickets', v => { tickets = Object.entries(v || {}).map(([id, t]) => ({ id, ...t })); renderTickets(); renderCustomers(); });
+  listen('subscriptions', v => { subs = Object.entries(v || {}).map(([id, s]) => ({ id, ...s })); renderAll(); });
+  listen('supportTickets', v => { tickets = Object.entries(v || {}).map(([id, t]) => ({ id, ...t })); renderAll(); });
   listen('config/payment', v => { payment = v || {}; renderPayment(); });
+  listen('config/announcement', v => { announcement = v || {}; renderAnnouncement(); });
+  listen('usage', v => { usage = v || {}; renderAll(); });
+  listen('payments', v => { payments = Object.entries(v || {}).map(([id, p]) => ({ id, ...p })); renderRevenue(); if (openId) renderDetail(); });
+  listen('auditLog', v => { audit = Object.entries(v || {}).map(([id, a]) => ({ id, ...a })); renderRevenue(); if (openId) renderDetail(); });
+  loadBusinesses();
 });
 
 function listen(path, cb) {
   const ref = db.ref(path);
-  const fn = s => cb(s.val());
-  ref.on('value', fn, err => alert('Could not read ' + path + ': ' + err.message));
+  const fn = s => { try { cb(s.val()); } catch (e) { console.error(path, e); } };
+  ref.on('value', fn, err => alert('Could not read ' + path + ': ' + err.message + '\nHave you published the latest rules?'));
   listeners.push([ref, fn]);
+}
+async function loadBusinesses() {
+  try { businesses = (await db.ref('businesses').get()).val() || {}; renderAll(); if (openId) renderDetail(); }
+  catch (e) { alert('Could not read businesses: ' + e.message + '\nHave you published the latest rules?'); }
 }
 
 // ---------- tabs ----------
-document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
-  document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b));
-  ['customers', 'support', 'payment'].forEach(t => $('tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
-});
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
+function showTab(t) {
+  document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x.dataset.tab === t));
+  ['customers', 'support', 'revenue', 'broadcast', 'payment'].forEach(n => $('tab-' + n).classList.toggle('hidden', n !== t));
+}
+function renderAll() { renderCustomers(); renderTickets(); renderRevenue(); renderReminders(); }
 
-// ---------- customers ----------
+// ---------- helpers on a customer ----------
 function statusOf(s) {
   const now = Date.now(), v = s.validUntil || 0;
   if (s.plan === 'lifetime') return 'lifetime';
@@ -185,104 +269,312 @@ function statusOf(s) {
 }
 const LABEL = { pending:'Awaiting approval', active:'Active', expired:'Expired', lifetime:'Free for life', suspended:'Suspended' };
 const PILL = { pending:'p-pending', active:'p-active', expired:'p-expired', lifetime:'p-life', suspended:'p-susp' };
+function bizOf(id) { return businesses[id] || {}; }
+function ownerPhone(id) {
+  const b = bizOf(id);
+  if (b.phone) return b.phone;
+  const m = Object.values(b.members || {}).find(x => x && x.role === 'OWNER');
+  return (m && m.phone) || '';
+}
+function planText(s) { const st = statusOf(s); return st === 'lifetime' ? 'free for life' : st === 'pending' ? 'awaiting approval' : (s.validUntil > Date.now() ? 'valid until ' : 'ended on ') + fmtD(s.validUntil); }
+function lastActive(id) { return (usage[id] || {}).lastActiveAt || 0; }
 
+// ---------- customers ----------
+function matchesFilter(s, f) {
+  const st = statusOf(s), now = Date.now();
+  if (f === 'all') return true;
+  if (f === 'expiring') return st === 'active' && s.validUntil - now <= 7 * DAY;
+  if (f === 'inactive') { const la = lastActive(s.id); return !la || now - la > 14 * DAY; }
+  return st === f;
+}
 function renderCustomers() {
-  const counts = { all: subs.length, pending:0, active:0, expired:0, lifetime:0, suspended:0 };
+  const counts = { total: subs.length, pending:0, active:0, expired:0, lifetime:0, suspended:0 };
   subs.forEach(s => counts[statusOf(s)]++);
-  $('stats').innerHTML = [['Total', counts.all], ['Awaiting', counts.pending], ['Active', counts.active], ['Expired', counts.expired], ['Free for life', counts.lifetime], ['Suspended', counts.suspended]]
+  $('stats').innerHTML = [['Total', counts.total], ['Awaiting', counts.pending], ['Active', counts.active], ['Expired', counts.expired], ['Free for life', counts.lifetime], ['Suspended', counts.suspended]]
     .map(([k, v]) => `<div class="stat"><b>${v}</b>${k}</div>`).join('');
   const q = $('search').value.trim().toLowerCase(), f = $('filter').value;
   const order = { pending:0, expired:1, active:2, suspended:3, lifetime:4 };
-  const list = subs.filter(s => (f === 'all' || statusOf(s) === f) &&
-      (!q || [s.businessName, s.ownerName, s.ownerEmail].join(' ').toLowerCase().includes(q)))
+  const list = subs.filter(s => matchesFilter(s, f) &&
+      (!q || [s.businessName, s.ownerName, s.ownerEmail, ownerPhone(s.id)].join(' ').toLowerCase().includes(q)))
     .sort((a, b) => order[statusOf(a)] - order[statusOf(b)] || (a.validUntil || 0) - (b.validUntil || 0));
   $('customerList').innerHTML = list.length ? list.map(customerCard).join('') : '<div class="card muted">No businesses match.</div>';
+  renderBulk();
 }
 $('search').oninput = renderCustomers; $('filter').onchange = renderCustomers;
 
 function customerCard(s) {
-  const st = statusOf(s);
+  const st = statusOf(s), u = usage[s.id] || {}, b = bizOf(s.id);
   const open = tickets.filter(t => t.businessId === s.id && t.status === 'open').length;
-  const until = st === 'lifetime' ? '' : (st === 'pending' ? `Instant access ${s.validUntil > Date.now() ? 'ends' : 'ended'} ${fmtDate(s.validUntil)}` : `${s.validUntil > Date.now() ? 'Valid until' : 'Ended'} ${fmtDate(s.validUntil)}`);
-  const pendingBtns = st === 'pending' ? `
-      <button class="act primary" data-a="approve" data-id="${esc(s.id)}">Approve ${TRIAL_DAYS}-day trial</button>
-      <button class="act danger" data-a="reject" data-id="${esc(s.id)}">Reject</button>` : '';
+  const la = u.lastActiveAt;
   return `<div class="card">
-    <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
-      <b>${esc(s.businessName || '(unnamed)')}</b>
+    <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center">
+      <label class="sel" style="margin:0"><input type="checkbox" data-sel="${esc(s.id)}" ${selected.has(s.id) ? 'checked' : ''}><b style="color:var(--text);font-size:15px">${esc(s.businessName || '(unnamed)')}</b></label>
       <span class="pill ${PILL[st]}">${LABEL[st]}</span>
     </div>
-    <div class="muted">${esc(s.ownerName)} • <a href="mailto:${esc(s.ownerEmail)}">${esc(s.ownerEmail)}</a></div>
-    <div class="muted">${esc(until)}${open ? ` • <b style="color:var(--amber)">${open} open ticket${open > 1 ? 's' : ''}</b>` : ''}</div>
+    <div class="muted">${esc(s.ownerName)} • ${esc(s.ownerEmail)}${ownerPhone(s.id) ? ' • ' + esc(ownerPhone(s.id)) : ''}</div>
+    <div class="muted">${esc(planText(s))} • ${la ? 'last active ' + fmtD(la) : 'never opened since tracking began'}${u.bills30d != null ? ` • ${u.bills30d} bills / 30d` : ''}${u.productCount != null ? ` • ${u.productCount} products` : ''}${b.businessType ? ' • ' + esc(b.businessType) : ''}
+      ${open ? ` • <b style="color:var(--amber)">${open} open ticket${open > 1 ? 's' : ''}</b>` : ''}</div>
     ${s.adminNote ? `<div class="msg">${esc(s.adminNote)}</div>` : ''}
     <div class="row">
-      ${pendingBtns}
-      <button class="act" data-a="ext1" data-id="${esc(s.id)}">+1 mo</button>
-      <button class="act" data-a="ext3" data-id="${esc(s.id)}">+3 mo</button>
-      <button class="act" data-a="ext12" data-id="${esc(s.id)}">+12 mo</button>
-      <button class="act" data-a="life" data-id="${esc(s.id)}">Free for life</button>
-      <button class="act danger" data-a="susp" data-id="${esc(s.id)}">Suspend</button>
-      <button class="act" data-a="note" data-id="${esc(s.id)}">Note</button>
-      <button class="act" data-a="copy" data-id="${esc(s.id)}">Copy business ID</button>
+      <button class="act primary" data-open="${esc(s.id)}">Open</button>
+      ${st === 'pending' ? `<button class="act" data-quick="approve" data-id="${esc(s.id)}">Approve ${TRIAL_DAYS}-day trial</button>` : ''}
+      ${waLink(ownerPhone(s.id)) ? `<a class="act" style="text-decoration:none;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px" target="_blank" rel="noopener" href="${waLink(ownerPhone(s.id))}">WhatsApp</a>` : ''}
     </div>
   </div>`;
 }
-
-$('customerList').addEventListener('click', async e => {
-  const b = e.target.closest('button[data-a]'); if (!b) return;
-  const s = subs.find(x => x.id === b.dataset.id); if (!s) return;
-  const a = b.dataset.a, now = Date.now(), name = s.businessName || s.id;
-  const upd = (extra, msg) => {
-    if (!confirm(msg + '\n\n' + name)) return;
-    db.ref('subscriptions/' + s.id).update({ ...extra, updatedAt: now, updatedBy: auth.currentUser.uid })
-      .catch(err => alert('Failed: ' + err.message));
-  };
-  const extend = months => {
-    const base = (s.plan === 'lifetime' || s.plan === 'suspended' || s.plan === 'pending') ? now : Math.max(now, s.validUntil || 0);
-    const d = new Date(base); d.setMonth(d.getMonth() + months);
-    upd({ plan: 'paid', validUntil: d.getTime() }, `Extend by ${months} month${months > 1 ? 's' : ''}? New end date: ${fmtDate(d.getTime())}`);
-  };
-  if (a === 'approve') upd({ plan: 'trial', validUntil: now + TRIAL_DAYS * DAY }, `Approve a ${TRIAL_DAYS}-day free trial?`);
-  else if (a === 'reject') upd({ plan: 'suspended', validUntil: 0 }, 'Reject this account? They can still view data but not make changes.');
-  else if (a === 'ext1') extend(1);
-  else if (a === 'ext3') extend(3);
-  else if (a === 'ext12') extend(12);
-  else if (a === 'life') upd({ plan: 'lifetime', validUntil: LIFETIME }, 'Make this business free for life?');
-  else if (a === 'susp') upd({ plan: 'suspended', validUntil: 0 }, 'Suspend this business? They can still view data but not make changes.');
-  else if (a === 'note') {
-    const n = prompt('Private note about ' + name + ' (only you can see this):', s.adminNote || '');
-    if (n !== null) db.ref('subscriptions/' + s.id).update({ adminNote: n.trim(), updatedAt: now, updatedBy: auth.currentUser.uid }).catch(err => alert('Failed: ' + err.message));
+$('customerList').addEventListener('click', e => {
+  const o = e.target.closest('[data-open]'); if (o) return openDetail(o.dataset.open);
+  const q = e.target.closest('[data-quick]'); if (q) return approve(q.dataset.id);
+});
+$('customerList').addEventListener('change', e => {
+  const c = e.target.closest('[data-sel]'); if (!c) return;
+  c.checked ? selected.add(c.dataset.sel) : selected.delete(c.dataset.sel);
+  renderBulk();
+});
+function renderBulk() {
+  const n = selected.size;
+  $('bulk').classList.toggle('hidden', !n);
+  if (!n) return;
+  $('bulk').innerHTML = `<b>${n} selected</b>
+    <div class="row">
+      <button class="act primary" data-bulk="approve">Approve ${TRIAL_DAYS}-day trial (awaiting only)</button>
+      <button class="act" data-bulk="notice">Send notice</button>
+      <button class="act" data-bulk="emails">Copy emails</button>
+      <button class="act" data-bulk="clear">Clear</button>
+    </div>`;
+}
+$('bulk').addEventListener('click', async e => {
+  const b = e.target.closest('[data-bulk]'); if (!b) return;
+  const ids = [...selected], a = b.dataset.bulk;
+  if (a === 'clear') { selected.clear(); return renderCustomers(); }
+  if (a === 'emails') { const t = ids.map(id => (subs.find(s => s.id === id) || {}).ownerEmail).filter(Boolean).join(', '); try { await navigator.clipboard.writeText(t); alert('Copied ' + ids.length + ' emails.'); } catch (_) { prompt('Copy:', t); } return; }
+  if (a === 'notice') {
+    const t = prompt(`Notice shown on the dashboard of ${ids.length} business(es). Leave empty to clear:`, '');
+    if (t === null) return;
+    for (const id of ids) await applyChange(id, { notice: t.trim() }, 'notice', t.trim() || '(cleared)').catch(err => alert(err.message));
+    alert('Done.');
   }
-  else if (a === 'copy') { try { await navigator.clipboard.writeText(s.id); alert('Copied: ' + s.id); } catch (_) { prompt('Copy this business ID:', s.id); } }
+  if (a === 'approve') {
+    const targets = ids.filter(id => { const s = subs.find(x => x.id === id); return s && statusOf(s) === 'pending'; });
+    if (!targets.length) return alert('None of the selected are awaiting approval.');
+    if (!confirm(`Approve a ${TRIAL_DAYS}-day trial for ${targets.length} business(es)?`)) return;
+    for (const id of targets) await applyChange(id, { plan: 'trial', validUntil: Date.now() + TRIAL_DAYS * DAY }, 'approve_trial', `${TRIAL_DAYS}-day trial approved`).catch(err => alert(err.message));
+    selected.clear();
+  }
+});
+$('exportCustomers').onclick = () => {
+  const rows = [['Business', 'Owner', 'Email', 'Phone', 'Plan', 'Status', 'Valid until', 'Last active', 'Bills (30d)', 'Products', 'Business ID']];
+  subs.forEach(s => rows.push([s.businessName, s.ownerName, s.ownerEmail, ownerPhone(s.id), s.plan, LABEL[statusOf(s)], s.plan === 'lifetime' ? 'lifetime' : fmtD(s.validUntil), fmtD(lastActive(s.id)), (usage[s.id] || {}).bills30d, (usage[s.id] || {}).productCount, s.id]));
+  download('owuinung-customers.csv', toCsv(rows));
+};
+
+// ---------- change + logging ----------
+async function applyChange(id, fields, action, detail, pay) {
+  const s = subs.find(x => x.id === id) || {}, now = Date.now();
+  const updates = {};
+  Object.entries({ ...fields, updatedAt: now, updatedBy: auth.currentUser.uid }).forEach(([k, v]) => updates[`subscriptions/${id}/${k}`] = v);
+  updates[`auditLog/${db.ref('auditLog').push().key}`] = { businessId: id, businessName: s.businessName || '', action, detail, at: now, by: auth.currentUser.email };
+  if (pay) updates[`payments/${db.ref('payments').push().key}`] = { businessId: id, businessName: s.businessName || '', amount: pay.amount, method: pay.method, reference: pay.reference, months: pay.months, paidAt: pay.paidAt, recordedAt: now, by: auth.currentUser.email };
+  await db.ref().update(updates);
+}
+function approve(id) {
+  const s = subs.find(x => x.id === id); if (!s) return;
+  if (confirm(`Approve a ${TRIAL_DAYS}-day free trial?\n\n${s.businessName}`)) applyChange(id, { plan: 'trial', validUntil: Date.now() + TRIAL_DAYS * DAY }, 'approve_trial', `${TRIAL_DAYS}-day trial approved`).catch(e => alert(e.message));
+}
+function extendBase(s) { const now = Date.now(); return (s.plan === 'lifetime' || s.plan === 'suspended' || s.plan === 'pending') ? now : Math.max(now, s.validUntil || 0); }
+
+// ---------- payment dialog (extend + record) ----------
+function openPayDlg(id, months) {
+  const s = subs.find(x => x.id === id); if (!s) return;
+  const d = new Date(extendBase(s)); d.setMonth(d.getMonth() + months);
+  const newEnd = d.getTime(), amt = payment.amount ? (Number(payment.amount) * months) : '';
+  $('pdTitle').textContent = `Extend ${months} month${months > 1 ? 's' : ''} — ${s.businessName}`;
+  $('pdBody').innerHTML = `
+    <div class="card">
+      <div class="muted">New end date: <b>${fmtD(newEnd)}</b></div>
+      <label>Amount received (₹) — leave 0 for a free extension</label><input id="payAmt" inputmode="decimal" value="${esc(amt)}">
+      <label>Method</label><select id="payMethod"><option>UPI</option><option>Cash</option><option>Bank transfer</option><option>Free / complimentary</option><option>Other</option></select>
+      <label>Reference (UPI transaction ID, note)</label><input id="payRef">
+      <label>Date received</label><input id="payDate" type="date" value="${new Date().toISOString().slice(0, 10)}">
+      <div class="row"><button class="act primary" id="paySave">Save and extend</button></div>
+    </div>`;
+  $('payDlg').showModal();
+  $('paySave').onclick = async () => {
+    const amount = Number($('payAmt').value) || 0, paidAt = new Date($('payDate').value + 'T12:00:00').getTime() || Date.now();
+    try {
+      await applyChange(id, { plan: 'paid', validUntil: newEnd }, 'extend', `+${months} month(s) until ${fmtD(newEnd)}`, { amount, method: $('payMethod').value, reference: $('payRef').value.trim(), months, paidAt });
+      $('payDlg').close();
+    } catch (e) { alert('Failed: ' + e.message); }
+  };
+}
+$('pdClose').onclick = () => $('payDlg').close();
+
+// ---------- customer detail ----------
+function openDetail(id) { openId = id; renderDetail(); if (!$('detail').open) $('detail').showModal(); }
+$('dClose').onclick = () => { openId = null; $('detail').close(); };
+$('detail').addEventListener('close', () => { openId = null; });
+
+function kv(k, v) { return `<div class="kv"><span>${esc(k)}</span>${v === '' || v == null ? '-' : v}</div>`; }
+function renderDetail() {
+  const s = subs.find(x => x.id === openId); if (!s) return;
+  const st = statusOf(s), b = bizOf(s.id), u = usage[s.id] || {};
+  $('dTitle').textContent = s.businessName || '(unnamed)';
+  const members = Object.entries(b.members || {}).map(([uid, m]) => ({ uid, ...m }));
+  const pays = payments.filter(p => p.businessId === s.id).sort((a, c) => (c.paidAt || 0) - (a.paidAt || 0));
+  const logs = audit.filter(a => a.businessId === s.id).sort((a, c) => (c.at || 0) - (a.at || 0));
+  const tks = tickets.filter(t => t.businessId === s.id).sort((a, c) => (c.createdAt || 0) - (a.createdAt || 0));
+  const phone = ownerPhone(s.id);
+  $('dBody').innerHTML = `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><h3>Subscription</h3><span class="pill ${PILL[st]}">${LABEL[st]}</span></div>
+      <div class="muted">${esc(planText(s))}${s.notice ? ' • notice active' : ''}</div>
+      <div class="row">
+        ${st === 'pending' ? `<button class="act primary" data-d="approve">Approve ${TRIAL_DAYS}-day trial</button><button class="act danger" data-d="reject">Reject</button>` : ''}
+        <button class="act" data-d="ext1">+1 mo</button><button class="act" data-d="ext3">+3 mo</button><button class="act" data-d="ext12">+12 mo</button>
+        <button class="act" data-d="date">Set exact end date</button>
+        <button class="act" data-d="life">Free for life</button>
+        <button class="act danger" data-d="susp">Suspend</button>
+      </div>
+      <div class="row">
+        <button class="act" data-d="note">Private note</button>
+        <button class="act" data-d="notice">Notice to this customer</button>
+        <button class="act" data-d="reset">Send password reset email</button>
+        <button class="act" data-d="copy">Copy business ID</button>
+      </div>
+      ${s.adminNote ? `<div class="msg"><b>Your note:</b> ${esc(s.adminNote)}</div>` : ''}
+      ${s.notice ? `<div class="msg" style="background:#fff3e0"><b>Notice shown in their app:</b> ${esc(s.notice)}</div>` : ''}
+    </div>
+
+    <div class="card">
+      <h3>Business and owner</h3>
+      <div class="grid">
+        ${kv('Owner', esc(s.ownerName))}${kv('Email', `<a href="mailto:${esc(s.ownerEmail)}">${esc(s.ownerEmail)}</a>`)}
+        ${kv('Phone', phone ? `${esc(phone)} ${waLink(phone) ? `• <a target="_blank" rel="noopener" href="${waLink(phone)}">WhatsApp</a>` : ''}` : '')}
+        ${kv('Type', esc(b.businessType))}${kv('Address', esc(b.address))}
+        ${kv('Signed up', fmtDT(s.trialStartedAt || b.createdAt))}${kv('Business ID', esc(s.id))}
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Usage</h3>
+      <div class="grid">
+        ${kv('Last active', u.lastActiveAt ? fmtDT(u.lastActiveAt) : '')}${kv('Last user', esc((u.lastUserName || '') + (u.lastUserRole ? ' (' + u.lastUserRole + ')' : '')))}
+        ${kv('Bills (all time)', u.totalBills)}${kv('Bills (30 days)', u.bills30d)}
+        ${kv('Sales (30 days)', u.sales30d != null ? money(u.sales30d) : '')}${kv('Products', u.productCount)}
+        ${kv('Low stock items', u.lowStock)}${kv('App version', esc(u.appVersion))}
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Staff logins (${members.length})</h3>
+      ${members.length ? `<div class="scroll"><table><tr><th>Name</th><th>Role</th><th>Email</th><th>Phone</th><th>Active</th></tr>
+        ${members.map(m => `<tr><td>${esc(m.name)}</td><td>${esc(m.role)}</td><td>${esc(m.email)}</td><td>${esc(m.phone)}</td><td>${m.active === false ? 'No' : 'Yes'}</td></tr>`).join('')}</table></div>` : '<div class="muted">No staff data.</div>'}
+    </div>
+
+    <div class="card">
+      <h3>Payments (${pays.length}) — total ${money(pays.reduce((a, p) => a + (Number(p.amount) || 0), 0))}</h3>
+      ${pays.length ? `<div class="scroll"><table><tr><th>Date</th><th>Amount</th><th>Method</th><th>Months</th><th>Reference</th></tr>
+        ${pays.map(p => `<tr><td>${fmtD(p.paidAt)}</td><td>${money(p.amount)}</td><td>${esc(p.method)}</td><td>${esc(p.months)}</td><td>${esc(p.reference)}</td></tr>`).join('')}</table></div>` : '<div class="muted">No payments recorded.</div>'}
+    </div>
+
+    <div class="card">
+      <h3>Support tickets (${tks.length})</h3>
+      ${tks.length ? tks.map(ticketCard).join('') : '<div class="muted">None.</div>'}
+    </div>
+
+    <div class="card">
+      <h3>Change history</h3>
+      ${logs.length ? `<div class="scroll"><table><tr><th>When</th><th>Action</th><th>Detail</th></tr>
+        ${logs.map(a => `<tr><td>${fmtDT(a.at)}</td><td>${esc(a.action)}</td><td>${esc(a.detail)}</td></tr>`).join('')}</table></div>` : '<div class="muted">No changes recorded yet.</div>'}
+    </div>
+
+    <div class="card">
+      <h3>Their data (read-only)</h3>
+      <div class="muted">Loads on demand. Product photos are skipped. Everything here is that customer's private shop data, so open it only to help with a support request.</div>
+      <div class="row">
+        <button class="act" data-load="products">Products</button>
+        <button class="act" data-load="bills">Bills (latest 100)</button>
+        <button class="act" data-load="customers">Customers</button>
+        <button class="act" data-load="stockMovements">Stock history (latest 100)</button>
+        <button class="act" data-load="expenses">Expenses</button>
+        <button class="act" data-load="purchaseInvoices">Purchase invoices</button>
+        <button class="act" data-load="returns">Returns</button>
+      </div>
+      <div id="dataView" style="margin-top:10px"></div>
+    </div>`;
+}
+
+$('dBody').addEventListener('click', async e => {
+  const s = subs.find(x => x.id === openId); if (!s) return;
+  const d = e.target.closest('[data-d]');
+  if (d) {
+    const a = d.dataset.d, now = Date.now(), name = s.businessName || s.id;
+    const run = (fields, action, detail, msg) => { if (confirm(msg + '\n\n' + name)) applyChange(s.id, fields, action, detail).catch(err => alert('Failed: ' + err.message)); };
+    if (a === 'approve') approve(s.id);
+    else if (a === 'reject') run({ plan: 'suspended', validUntil: 0 }, 'reject', 'Account rejected', 'Reject this account? They can still view data but not make changes.');
+    else if (a === 'ext1') openPayDlg(s.id, 1);
+    else if (a === 'ext3') openPayDlg(s.id, 3);
+    else if (a === 'ext12') openPayDlg(s.id, 12);
+    else if (a === 'life') run({ plan: 'lifetime', validUntil: LIFETIME }, 'lifetime', 'Set free for life', 'Make this business free for life?');
+    else if (a === 'susp') run({ plan: 'suspended', validUntil: 0 }, 'suspend', 'Suspended', 'Suspend this business? They can still view data but not make changes.');
+    else if (a === 'date') {
+      const v = prompt('New end date (YYYY-MM-DD):', new Date(Math.max(now, s.validUntil || 0)).toISOString().slice(0, 10));
+      if (v) { const t = new Date(v + 'T23:59:59').getTime(); if (isNaN(t)) return alert('Not a valid date.'); applyChange(s.id, { plan: 'paid', validUntil: t }, 'set_date', 'End date set to ' + fmtD(t)).catch(err => alert(err.message)); }
+    }
+    else if (a === 'note') { const n = prompt('Private note (only you can see this):', s.adminNote || ''); if (n !== null) applyChange(s.id, { adminNote: n.trim() }, 'note', n.trim() || '(cleared)').catch(err => alert(err.message)); }
+    else if (a === 'notice') { const n = prompt('Notice shown on this customer\'s dashboard (empty clears it):', s.notice || ''); if (n !== null) applyChange(s.id, { notice: n.trim() }, 'notice', n.trim() || '(cleared)').catch(err => alert(err.message)); }
+    else if (a === 'reset') {
+      if (!s.ownerEmail) return alert('No email on record.');
+      if (confirm('Send a password reset email to ' + s.ownerEmail + '?')) auth.sendPasswordResetEmail(s.ownerEmail).then(() => alert('Reset email sent.')).catch(err => alert('Failed: ' + err.message));
+    }
+    else if (a === 'copy') { try { await navigator.clipboard.writeText(s.id); alert('Copied: ' + s.id); } catch (_) { prompt('Copy this business ID:', s.id); } }
+    return;
+  }
+  const l = e.target.closest('[data-load]');
+  if (l) return loadData(s.id, l.dataset.load);
+  ticketAction(e);
 });
 
-// ---------- support ----------
-function renderTickets() {
-  // Don't wipe a reply the admin is typing when new data arrives.
-  const ae = document.activeElement;
-  if (ae && ae.tagName === 'TEXTAREA' && $('ticketList').contains(ae)) return;
-  const open = tickets.filter(t => t.status === 'open').length;
-  $('openBadge').textContent = open ? `(${open})` : '';
-  const f = $('ticketFilter').value;
-  const list = tickets.filter(t => f === 'all' || t.status === f).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-  $('ticketList').innerHTML = list.length ? list.map(ticketCard).join('') : '<div class="card muted">Nothing here.</div>';
+// ---------- read-only data viewer ----------
+async function loadData(id, node) {
+  const box = $('dataView'); box.innerHTML = '<div class="muted">Loading…</div>';
+  try {
+    let ref = db.ref(`${node}/${id}`);
+    if (node === 'bills' || node === 'stockMovements') ref = ref.orderByKey().limitToLast(100);
+    const val = (await ref.get()).val() || {};
+    let rows = [];
+    if (node === 'returns') { Object.entries(val).forEach(([billId, rs]) => Object.entries(rs || {}).forEach(([rid, r]) => rows.push({ id: rid, billId, ...(r || {}) }))); }
+    else rows = Object.entries(val).map(([k, v]) => (v && typeof v === 'object') ? { id: k, ...v } : { id: k, value: v });
+    box.innerHTML = tableOf(rows, node);
+  } catch (e) { box.innerHTML = `<div class="err">${esc(e.message)}</div>`; }
 }
-$('ticketFilter').onchange = renderTickets;
+function tableOf(rows, node) {
+  if (!rows.length) return '<div class="muted">Nothing here.</div>';
+  const flat = rows.map(r => { const o = {}; Object.entries(r).forEach(([k, v]) => { if (v == null) return; if (Array.isArray(v)) { o[k] = v.length + ' items'; return; } if (typeof v === 'object') { const n = Object.keys(v).length; o[k] = n + ' item' + (n === 1 ? '' : 's'); return; } if (typeof v === 'string' && v.length > 120) return; o[k] = v; }); return o; });
+  const freq = {}; flat.forEach(o => Object.keys(o).forEach(k => freq[k] = (freq[k] || 0) + 1));
+  const pri = ['name', 'productName', 'customerName', 'timestamp', 'createdAt', 'date', 'total', 'sellingPrice', 'amount', 'stock', 'type', 'quantityDelta', 'resultingStock', 'paymentMode', 'cashierName', 'phone', 'category', 'reason', 'performedByName', 'refundTotal', 'description', 'invoiceNumber'];
+  let cols = Object.keys(freq).filter(k => k !== 'id');
+  cols.sort((a, c) => { const pa = pri.indexOf(a), pc = pri.indexOf(c); return (pa < 0 ? 99 : pa) - (pc < 0 ? 99 : pc) || freq[c] - freq[a]; });
+  cols = cols.slice(0, 9);
+  const fmt = (k, v) => v === undefined ? '' : (typeof v === 'number' && v > 1e12 && /time|at$|date/i.test(k)) ? fmtDT(v) : esc(v);
+  if (flat.length && (flat[0].timestamp || flat[0].createdAt)) flat.sort((a, c) => (c.timestamp || c.createdAt || 0) - (a.timestamp || a.createdAt || 0));
+  return `<div class="muted">${rows.length} record${rows.length === 1 ? '' : 's'}</div><div class="scroll"><table><tr>${cols.map(c => `<th>${esc(c)}</th>`).join('')}</tr>${flat.map(o => `<tr>${cols.map(c => `<td>${fmt(c, o[c])}</td>`).join('')}</tr>`).join('')}</table></div>`;
+}
 
+// ---------- support ----------
 function ticketCard(t) {
-  const wa = (t.phone || '').replace(/\D/g, '');
+  const wa = waLink(t.phone, `Hi ${t.userName || ''}, regarding your Owuinüng POS query "${t.subject}": `);
   const sub = subs.find(s => s.id === t.businessId);
-  const st = sub ? LABEL[statusOf(sub)] : 'unknown plan';
-  return `<div class="card" data-tid="${esc(t.id)}">
+  return `<div class="card" data-tid="${esc(t.id)}" style="border:1px solid var(--line);box-shadow:none">
     <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
       <b>${esc(t.subject)}</b>
       <span class="pill ${t.status === 'open' ? 'p-pending' : t.status === 'answered' ? 'p-life' : 'p-susp'}">${esc(t.status)}</span>
     </div>
-    <div class="muted">${esc(t.businessName)} (${esc(st)}) • ${esc(t.userName)} • <a href="mailto:${esc(t.userEmail)}">${esc(t.userEmail)}</a>
-      ${wa ? ` • <a target="_blank" rel="noopener" href="https://wa.me/${wa}">WhatsApp ${esc(t.phone)}</a>` : ''} • ${fmtDate(t.createdAt)}</div>
+    <div class="muted">${sub ? `<a href="#" data-opencust="${esc(sub.id)}">${esc(t.businessName)}</a> (${esc(LABEL[statusOf(sub)])})` : esc(t.businessName)} • ${esc(t.userName)} • <a href="mailto:${esc(t.userEmail)}">${esc(t.userEmail)}</a>
+      ${wa ? ` • <a target="_blank" rel="noopener" href="${wa}">WhatsApp ${esc(t.phone)}</a>` : ''} • ${fmtDT(t.createdAt)}</div>
     <div class="msg">${esc(t.message)}</div>
-    ${t.adminReply ? `<div class="msg reply"><b>Your reply</b> (${fmtDate(t.repliedAt)}):\n${esc(t.adminReply)}</div>` : ''}
-    <textarea rows="3" placeholder="Write a reply that the customer will see in the app">${t.status === 'open' ? '' : ''}</textarea>
+    ${t.adminReply ? `<div class="msg reply"><b>Your reply</b> (${fmtDT(t.repliedAt)}):\n${esc(t.adminReply)}</div>` : ''}
+    <textarea rows="3" placeholder="Write a reply that the customer will see in the app"></textarea>
     <div class="row">
       <button class="act primary" data-t="reply">Send reply</button>
       ${t.status !== 'closed' ? '<button class="act" data-t="close">Close</button>' : '<button class="act" data-t="reopen">Reopen</button>'}
@@ -290,7 +582,19 @@ function ticketCard(t) {
     </div>
   </div>`;
 }
-$('ticketList').addEventListener('click', e => {
+function renderTickets() {
+  const open = tickets.filter(t => t.status === 'open').length;
+  $('openBadge').textContent = open ? `(${open})` : '';
+  const ae = document.activeElement;
+  if (ae && ae.tagName === 'TEXTAREA' && ($('ticketList').contains(ae) || $('dBody').contains(ae))) return; // don't wipe a reply being typed
+  const f = $('ticketFilter').value;
+  const list = tickets.filter(t => f === 'all' || t.status === f).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  $('ticketList').innerHTML = list.length ? list.map(ticketCard).join('') : '<div class="card muted">Nothing here.</div>';
+}
+$('ticketFilter').onchange = renderTickets;
+function ticketAction(e) {
+  const oc = e.target.closest('[data-opencust]');
+  if (oc) { e.preventDefault(); return openDetail(oc.dataset.opencust); }
   const b = e.target.closest('button[data-t]'); if (!b) return;
   const card = b.closest('[data-tid]'), id = card.dataset.tid, ref = db.ref('supportTickets/' + id);
   const fail = err => alert('Failed: ' + err.message);
@@ -301,7 +605,64 @@ $('ticketList').addEventListener('click', e => {
   } else if (b.dataset.t === 'close') ref.update({ status: 'closed' }).catch(fail);
   else if (b.dataset.t === 'reopen') ref.update({ status: 'open' }).catch(fail);
   else if (b.dataset.t === 'delete') { if (confirm('Delete this ticket permanently?')) ref.remove().catch(fail); }
-});
+}
+$('ticketList').addEventListener('click', ticketAction);
+
+// ---------- revenue ----------
+function renderRevenue() {
+  const total = payments.reduce((a, p) => a + (Number(p.amount) || 0), 0);
+  const now = new Date(), ym = d => d.getFullYear() * 12 + d.getMonth();
+  const thisM = payments.filter(p => ym(new Date(p.paidAt || 0)) === ym(now)).reduce((a, p) => a + (Number(p.amount) || 0), 0);
+  const lastM = payments.filter(p => ym(new Date(p.paidAt || 0)) === ym(now) - 1).reduce((a, p) => a + (Number(p.amount) || 0), 0);
+  $('revStats').innerHTML = [['All time', money(total)], ['This month', money(thisM)], ['Last month', money(lastM)], ['Payments', payments.length], ['Paying customers', new Set(payments.filter(p => Number(p.amount) > 0).map(p => p.businessId)).size]]
+    .map(([k, v]) => `<div class="stat"><b>${v}</b>${k}</div>`).join('');
+  const byM = {}; payments.forEach(p => { const d = new Date(p.paidAt || 0); const k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); byM[k] = (byM[k] || 0) + (Number(p.amount) || 0); });
+  const ks = Object.keys(byM).sort().reverse();
+  $('revMonths').innerHTML = ks.length ? `<table><tr><th>Month</th><th>Received</th></tr>${ks.map(k => `<tr><td>${k}</td><td>${money(byM[k])}</td></tr>`).join('')}</table>` : '<div class="muted">No payments recorded yet. They are recorded when you use +1, +3 or +12 months on a customer.</div>';
+  const q = $('paySearch').value.trim().toLowerCase();
+  const list = payments.filter(p => !q || (p.businessName + ' ' + (p.reference || '')).toLowerCase().includes(q)).sort((a, c) => (c.paidAt || 0) - (a.paidAt || 0));
+  $('payTable').innerHTML = `<tr><th>Date</th><th>Business</th><th>Amount</th><th>Method</th><th>Months</th><th>Reference</th></tr>` +
+    list.map(p => `<tr><td>${fmtD(p.paidAt)}</td><td>${esc(p.businessName)}</td><td>${money(p.amount)}</td><td>${esc(p.method)}</td><td>${esc(p.months)}</td><td>${esc(p.reference)}</td></tr>`).join('');
+  $('auditTable').innerHTML = `<tr><th>When</th><th>Business</th><th>Action</th><th>Detail</th></tr>` +
+    [...audit].sort((a, c) => (c.at || 0) - (a.at || 0)).slice(0, 200).map(a => `<tr><td>${fmtDT(a.at)}</td><td>${esc(a.businessName)}</td><td>${esc(a.action)}</td><td>${esc(a.detail)}</td></tr>`).join('');
+}
+$('paySearch').oninput = renderRevenue;
+$('exportPayments').onclick = () => {
+  const rows = [['Date', 'Business', 'Amount', 'Method', 'Months', 'Reference', 'Recorded by']];
+  [...payments].sort((a, c) => (c.paidAt || 0) - (a.paidAt || 0)).forEach(p => rows.push([fmtD(p.paidAt), p.businessName, p.amount, p.method, p.months, p.reference, p.by]));
+  download('owuinung-payments.csv', toCsv(rows));
+};
+
+// ---------- reach out ----------
+const DEFAULT_TPL = "Hi {owner}, your Owuinüng POS subscription for {business} {status} {date}. To keep using it, please renew from the Pay button inside the app. Thank you!";
+$('tpl').value = safe(() => localStorage.getItem('owuinungTpl'), null) || DEFAULT_TPL;
+$('tpl').oninput = () => { safe(() => localStorage.setItem('owuinungTpl', $('tpl').value)); renderReminders(); };
+function renderReminders() {
+  const now = Date.now();
+  const list = subs.filter(s => { const st = statusOf(s); return st === 'pending' || (st === 'active' && s.validUntil - now <= 7 * DAY) || (st === 'expired' && now - s.validUntil <= 30 * DAY); })
+    .sort((a, b) => (a.validUntil || 0) - (b.validUntil || 0));
+  $('reminders').innerHTML = list.length ? list.map(s => {
+    const st = statusOf(s);
+    const status = st === 'pending' ? 'is waiting for approval' : st === 'expired' ? 'ended on' : 'ends on';
+    const date = st === 'pending' ? '' : fmtD(s.validUntil);
+    const text = $('tpl').value.replace(/\{owner\}/g, s.ownerName || '').replace(/\{business\}/g, s.businessName || '').replace(/\{status\}/g, status).replace(/\{date\}/g, date).replace(/\s+\./g, '.').trim();
+    const link = waLink(ownerPhone(s.id), text);
+    return `<div class="row" style="border-bottom:1px solid var(--line);padding:6px 0;margin:0">
+      <div class="grow"><b>${esc(s.businessName)}</b> <span class="pill ${PILL[st]}">${LABEL[st]}</span><div class="muted">${esc(s.ownerName)} • ${esc(planText(s))}</div></div>
+      ${link ? `<a class="act" style="text-decoration:none" target="_blank" rel="noopener" href="${link}">WhatsApp</a>` : '<span class="muted">no phone on record</span>'}
+      <button class="act" data-open="${esc(s.id)}">Open</button>
+    </div>`;
+  }).join('') : '<div class="muted">Nobody needs a reminder right now.</div>';
+}
+$('reminders').addEventListener('click', e => { const o = e.target.closest('[data-open]'); if (o) openDetail(o.dataset.open); });
+function renderAnnouncement() {
+  if (document.activeElement !== $('annText')) $('annText').value = announcement.text || '';
+  $('annActive').checked = announcement.active === true;
+}
+$('annSave').onclick = () => {
+  db.ref('config/announcement').set({ text: $('annText').value.trim(), active: $('annActive').checked && !!$('annText').value.trim(), updatedAt: Date.now() })
+    .then(() => $('annMsg').textContent = 'Saved.').catch(err => $('annMsg').textContent = 'Failed: ' + err.message);
+};
 
 // ---------- payment details ----------
 function renderPayment() {
@@ -312,7 +673,7 @@ function renderPayment() {
 $('savePay').onclick = () => {
   db.ref('config/payment').update({
     upi: $('pUpi').value.trim(), payee: $('pPayee').value.trim(), price: $('pPrice').value.trim(),
-    amount: $('pAmount').value.trim(), whatsapp: $('pWa').value.replace(/\D/g, '')
+    amount: $('pAmount').value.trim(), whatsapp: digits($('pWa').value)
   }).then(() => $('payMsg').textContent = 'Saved.').catch(err => $('payMsg').textContent = 'Failed: ' + err.message);
 };
 $('qrFile').onchange = e => {
