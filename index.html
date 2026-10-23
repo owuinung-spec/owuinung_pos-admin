@@ -80,6 +80,7 @@
       <button data-tab="revenue">Payments</button>
       <button data-tab="broadcast">Reach out</button>
       <button data-tab="payment">Payment details</button>
+      <button data-tab="storage">Storage</button>
     </div>
 
     <!-- CUSTOMERS -->
@@ -161,6 +162,24 @@
         <label>Message template (use {owner}, {business}, {date}, {status})</label>
         <textarea id="tpl" rows="4"></textarea>
         <div id="reminders" style="margin-top:10px"></div>
+      </div>
+    </section>
+
+    <!-- STORAGE -->
+    <section id="tab-storage" class="hidden">
+      <div class="card">
+        <h3>GitHub (website, downloads and videos)</h3>
+        <div class="muted">Exact figures from GitHub's public data. Updates every time you open this tab.</div>
+        <div id="ghBox" style="margin-top:10px" class="muted">Not loaded yet.</div>
+      </div>
+      <div class="card">
+        <h3>Firebase Realtime Database (all shop data and photos)</h3>
+        <div class="muted">Firebase does not let a web page read its own usage meter, so this is an <b>estimate</b>: it counts the records of every business and measures a small sample of each kind. Treat it as accurate to roughly &plusmn;25%. The exact figure is always on the Firebase usage page.</div>
+        <div class="row">
+          <button class="act primary" id="fbMeasure">Measure now</button>
+          <a class="act" style="text-decoration:none;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px" target="_blank" rel="noopener" href="https://console.firebase.google.com/project/owuinungpos/database/owuinungpos-default-rtdb/usage">Open exact usage in Firebase</a>
+        </div>
+        <div id="fbBox" style="margin-top:10px" class="muted">Press Measure now. It downloads a small sample from every business (usually a few MB) and counts against the free monthly download allowance, so use it when you need it, not all day.</div>
       </div>
     </section>
 
@@ -270,7 +289,8 @@ async function loadBusinesses() {
 document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
 function showTab(t) {
   document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x.dataset.tab === t));
-  ['customers', 'support', 'revenue', 'broadcast', 'payment'].forEach(n => $('tab-' + n).classList.toggle('hidden', n !== t));
+  ['customers', 'support', 'revenue', 'broadcast', 'payment', 'storage'].forEach(n => $('tab-' + n).classList.toggle('hidden', n !== t));
+  if (t === 'storage') loadGithub();
 }
 function renderAll() { renderCustomers(); renderTickets(); renderRevenue(); renderReminders(); }
 
@@ -725,6 +745,90 @@ $('qrFile').onchange = e => {
   };
   img.onerror = () => $('payMsg').textContent = 'Could not read that image.';
   img.src = URL.createObjectURL(file);
+};
+
+// ---------- storage (GitHub exact, Firebase estimated) ----------
+const GH_OWNER = 'owuinung-spec', GH_SITE_REPO = 'owuinung-spec.github.io';
+const GH_PAGES_LIMIT = 1e9, FB_LIMIT = 1e9;
+const fmtB = n => { n = Number(n) || 0; return n >= 1e9 ? (n / 1e9).toFixed(2) + ' GB' : n >= 1e6 ? (n / 1e6).toFixed(1) + ' MB' : n >= 1e3 ? Math.round(n / 1e3) + ' KB' : n + ' B'; };
+const BYTES = v => new TextEncoder().encode(typeof v === 'string' ? v : JSON.stringify(v == null ? null : v)).length;
+function meter(used, limit, label) {
+  const pct = Math.min(100, used / limit * 100), colour = pct < 70 ? 'var(--green)' : pct < 90 ? 'var(--amber)' : 'var(--red)';
+  return `<div style="margin:8px 0 4px;display:flex;justify-content:space-between;font-size:13px"><b>${esc(label)}</b><span>${fmtB(used)} of ${fmtB(limit)} &middot; ${fmtB(Math.max(0, limit - used))} left</span></div>
+    <div style="height:12px;background:#eceff1;border-radius:99px;overflow:hidden"><div style="height:100%;width:${pct.toFixed(1)}%;background:${colour}"></div></div>
+    <div class="muted" style="margin-top:2px">${pct < 0.1 ? 'under 0.1' : pct.toFixed(1)}% used</div>`;
+}
+let ghLoaded = false;
+async function loadGithub() {
+  if (ghLoaded) return;
+  const box = $('ghBox'); box.textContent = 'Loading…';
+  try {
+    const gh = async path => { const r = await fetch('https://api.github.com' + path); if (!r.ok) throw new Error(r.status === 403 ? 'GitHub is limiting requests from this network for a while. Try again in about an hour.' : 'GitHub answered ' + r.status); return r.json(); };
+    const repos = (await gh(`/users/${GH_OWNER}/repos?per_page=100`)).filter(r => !r.fork);
+    const rows = [];
+    for (const r of repos) {
+      let rel = 0, relCount = 0;
+      try { (await gh(`/repos/${GH_OWNER}/${r.name}/releases?per_page=100`)).forEach(x => (x.assets || []).forEach(a => { rel += a.size || 0; relCount++; })); } catch (_) {}
+      rows.push({ name: r.name, files: (r.size || 0) * 1024, rel, relCount });
+    }
+    const site = rows.find(r => r.name === GH_SITE_REPO);
+    const totalFiles = rows.reduce((a, r) => a + r.files, 0), totalRel = rows.reduce((a, r) => a + r.rel, 0);
+    box.innerHTML = (site ? meter(site.files, GH_PAGES_LIMIT, 'Website repository (published site limit)') : '<div class="err">Website repository not found.</div>') +
+      `<div class="stats" style="margin-top:12px">
+        <div class="stat"><b>${fmtB(totalFiles)}</b>files in ${rows.length} public repositor${rows.length === 1 ? 'y' : 'ies'}</div>
+        <div class="stat"><b>${fmtB(totalRel)}</b>app downloads (releases)</div>
+        <div class="stat"><b>${rows.reduce((a, r) => a + r.relCount, 0)}</b>files attached to releases</div></div>
+      <div class="scroll" style="max-height:none"><table><tr><th>Repository</th><th>Files</th><th>Release downloads</th></tr>${rows.map(r => `<tr><td>${esc(r.name)}</td><td>${fmtB(r.files)}</td><td>${fmtB(r.rel)} (${r.relCount})</td></tr>`).join('')}</table></div>
+      <div class="muted" style="margin-top:8px">The 1 GB meter is GitHub's size limit for a Pages website. Release files (the APK) do not count toward it, and each release file may be up to 2 GB. Private repositories are not listed here. Website traffic has a soft limit of about 100 GB a month that cannot be measured from this page; the two demo videos are about 7 MB together, so even heavy viewing stays far below it.</div>`;
+    ghLoaded = true;
+  } catch (e) { box.innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+}
+
+$('fbMeasure').onclick = async () => {
+  const btn = $('fbMeasure'), box = $('fbBox'); btn.disabled = true;
+  const nodes = ['products', 'customers', 'purchaseInvoices', 'stockMovements', 'bills', 'returns', 'expenses'];
+  const ids = Object.keys(businesses || {});
+  let downloaded = 0;
+  try {
+    const token = await auth.currentUser.getIdToken();
+    const base = firebaseConfig.databaseURL;
+    const rows = [];
+    for (let i = 0; i < ids.length; i++) {
+      const id = ids[i]; box.textContent = `Measuring business ${i + 1} of ${ids.length}…`;
+      const per = await Promise.all(nodes.map(async node => {
+        let count = 0;
+        try {
+          const r = await fetch(`${base}/${node}/${encodeURIComponent(id)}.json?shallow=true&auth=${encodeURIComponent(token)}`);
+          if (r.ok) { const j = await r.json(); count = j && typeof j === 'object' ? Object.keys(j).length : 0; downloaded += count * 30; }
+        } catch (_) {}
+        if (!count) return { node, count: 0, bytes: 0 };
+        const ref = db.ref(`${node}/${id}`).orderByKey();
+        const first = (await ref.limitToFirst(count > 16 ? 8 : 16).get()).val() || {};
+        let sample = Object.assign({}, first);
+        if (count > 16) Object.assign(sample, (await ref.limitToLast(8).get()).val() || {});
+        const sb = BYTES(sample), n = Object.keys(sample).length || 1;
+        downloaded += sb;
+        return { node, count, bytes: count <= 16 ? sb : Math.round(sb / n * count) };
+      }));
+      const prof = BYTES(businesses[id]);
+      rows.push({ id, name: (businesses[id] && businesses[id].name) || id, per, bytes: prof + per.reduce((a, p) => a + p.bytes, 0) });
+    }
+    const shared = BYTES(businesses) + BYTES(subs) + BYTES(usage) + BYTES(payments) + BYTES(audit) + BYTES(tickets) + BYTES(payment) + BYTES(appCfg) + BYTES(announcement);
+    const perTotal = rows.reduce((a, r) => a + r.bytes, 0) - rows.reduce((a, r) => a + BYTES(businesses[r.id]), 0);
+    const total = perTotal + shared;
+    rows.sort((a, b) => b.bytes - a.bytes);
+    const nodeTotals = nodes.map(n => ({ n, b: rows.reduce((a, r) => a + r.per.find(p => p.node === n).bytes, 0) })).sort((a, b) => b.b - a.b);
+    box.innerHTML = meter(total, FB_LIMIT, 'Estimated stored data (free limit)') +
+      `<div class="stats" style="margin-top:12px">
+        <div class="stat"><b>${ids.length}</b>businesses</div>
+        <div class="stat"><b>${fmtB(total / Math.max(1, ids.length))}</b>average per business</div>
+        <div class="stat"><b>${fmtB(downloaded)}</b>downloaded by this check</div></div>
+      <h3>What is using the space</h3>
+      <div class="muted" style="margin-bottom:6px">${nodeTotals.map(x => `${esc(x.n)} ${fmtB(x.b)}`).join(' &middot; ')} &middot; shared records (business profiles, plans, payments, tickets) ${fmtB(shared)}</div>
+      <div class="scroll" style="max-height:340px"><table><tr><th>Business</th><th>Estimated size</th><th>Products</th><th>Bills</th><th>Customers</th></tr>${rows.map(r => `<tr><td>${esc(r.name)}</td><td>${fmtB(r.bytes)}</td><td>${r.per[0].count} (${fmtB(r.per[0].bytes)})</td><td>${r.per[4].count} (${fmtB(r.per[4].bytes)})</td><td>${r.per[1].count}</td></tr>`).join('')}</table></div>
+      <div class="muted" style="margin-top:8px">Measured ${fmtDT(Date.now())}. Not counted here: sign-in accounts. Also free-plan limits that only the Firebase usage page shows: 10 GB downloaded per month and 100 phones connected at the same moment. Product photos are the biggest users of space, because each is stored inside the database.</div>`;
+  } catch (e) { box.innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+  btn.disabled = false;
 };
 </script>
 </body>
