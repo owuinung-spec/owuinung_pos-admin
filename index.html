@@ -22,6 +22,7 @@
   label { display:block; font-size:12px; color:var(--mute); margin-top:10px; }
   button.act { padding:8px 10px; border:1px solid var(--line); background:#fff; border-radius:8px; cursor:pointer; font-size:13px; color:var(--text); }
   button.act:hover { background:#f0f0f0; }
+  a.act { padding:8px 10px; border:1px solid var(--line); background:#fff; border-radius:8px; cursor:pointer; font-size:13px; color:var(--text); text-decoration:none; display:inline-block; } a.act:hover { background:#f0f0f0; }
   button.primary { background:var(--green); color:#fff; border-color:var(--green); } button.primary:hover { background:#256628; }
   button.danger { color:var(--red); }
   .row { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; align-items:center; }
@@ -73,18 +74,127 @@
     <div id="loginErr" class="err"></div>
   </div>
 
+  <div id="rulesBanner" class="card hidden" style="border-left:4px solid var(--red)"><b>New rules needed.</b> The new tabs save to parts of Firebase that your current rules do not allow yet. Paste the updated rules file into Firebase Console, Realtime Database, Rules, then press Publish, and reload this page. The old tabs keep working meanwhile.</div>
+
   <div id="app" class="hidden">
     <div class="tabs">
-      <button data-tab="customers" class="on">Customers</button>
+      <button data-tab="today" class="on">Today</button>
+      <button data-tab="customers">Customers</button>
+      <button data-tab="usage">Usage</button>
+      <button data-tab="leads">Leads</button>
+      <button data-tab="sales">Sales</button>
+      <button data-tab="promos">Promotions</button>
+      <button data-tab="broadcast">Marketing</button>
       <button data-tab="support">Support <span id="openBadge"></span></button>
       <button data-tab="revenue">Payments</button>
-      <button data-tab="broadcast">Reach out</button>
       <button data-tab="payment">Payment details</button>
       <button data-tab="storage">Storage</button>
     </div>
 
     <!-- CUSTOMERS -->
-    <section id="tab-customers">
+    <!-- TODAY -->
+    <section id="tab-today">
+      <div class="stats" id="todayStats"></div>
+      <div id="todayBox"></div>
+    </section>
+
+    <!-- USAGE -->
+    <section id="tab-usage" class="hidden">
+      <div class="stats" id="usageStats"></div>
+      <div class="card"><h3>Adoption funnel</h3><div class="muted">How far each shop gets. The drop between steps shows where people get stuck.</div><div id="usageFunnel" style="margin-top:8px"></div></div>
+      <div class="card"><h3>Trend (one snapshot a day, saved when you open this page)</h3><div id="usageTrend" class="muted">No history yet. A snapshot is saved the first time you open the page each day.</div></div>
+      <div class="card">
+        <h3>Shop health</h3>
+        <div class="row" style="margin-top:0"><select id="usageFilter" style="max-width:240px"><option value="">All health states</option><option value="active">Active (billed in last 7 days)</option><option value="slowing">Slowing (7 to 14 days)</option><option value="dormant">Dormant (over 14 days)</option><option value="stalled">Stalled (products, no bills)</option><option value="notstarted">Not started (no products)</option><option value="unknown">No data yet</option></select><button class="act" id="usageExport">Export CSV</button></div>
+        <div class="scroll" style="margin-top:8px;max-height:480px"><table id="usageTable"></table></div>
+        <div class="muted" style="margin-top:8px">Not recorded by app 1.1.0, so not shown here: crashes, app version per phone, which screens are used. These would need an app update later.</div>
+      </div>
+    </section>
+
+    <!-- LEADS -->
+    <section id="tab-leads" class="hidden">
+      <div class="stats" id="leadStats"></div>
+      <div class="card">
+        <div class="row" style="margin-top:0">
+          <div class="grow" style="flex:2"><input id="leadSearch" placeholder="Search leads by name, business, phone or town"></div>
+          <select id="leadFilter" style="max-width:170px"></select>
+          <button class="act primary" id="leadAdd">Add lead</button>
+          <button class="act" id="leadImportBtn">Import list</button>
+          <button class="act" id="leadExport">Export CSV</button>
+        </div>
+        <div class="scroll" style="margin-top:8px;max-height:520px"><table id="leadTable"></table></div>
+      </div>
+      <div class="card">
+        <h3>Lead finder (OpenStreetMap)</h3>
+        <div class="muted">Searches the free public map for shops near a place. Coverage in smaller towns can be thin, and phone numbers are often missing, so use the Google links to check a shop before adding it. Nothing is sent anywhere; it only reads the map.</div>
+        <div class="grid" style="margin-top:6px">
+          <div><label>Place</label><input id="lfPlace" value="Tuensang, Nagaland"></div>
+          <div><label>Kind of shop</label><select id="lfCat"><option value="all">Any shop</option><option value="supermarket|convenience|general|department_store|kiosk|greengrocer|bakery|butcher|farm|variety_store">Grocery, general and food</option><option value="clothes|shoes|fabric|boutique|tailor">Clothing and fabric</option><option value="mobile_phone|electronics|computer">Phones and electronics</option><option value="hardware|doityourself|paint|building_materials">Hardware and building</option><option value="chemist|medical_supply|cosmetics">Chemist and cosmetics</option><option value="stationery|books|gift">Stationery, books and gifts</option></select></div>
+          <div><label>Radius (km)</label><input id="lfRad" inputmode="decimal" value="5"></div>
+        </div>
+        <div class="row"><button class="act primary" id="lfGo">Find shops</button><a class="act" id="lfMaps" target="_blank" rel="noopener">Search Google Maps</a><a class="act" id="lfWeb" target="_blank" rel="noopener">Search Google</a><span id="lfMsg" class="muted"></span></div>
+        <div id="lfOut" style="margin-top:8px"></div>
+      </div>
+    </section>
+
+    <!-- SALES -->
+    <section id="tab-sales" class="hidden">
+      <div class="stats" id="salesStats"></div>
+      <div class="card"><h3>Lead pipeline</h3><div id="salesPipe"></div></div>
+      <div class="card"><h3>Money coming and at risk</h3><div id="salesMoney"></div></div>
+      <div class="card"><h3>What brings customers in</h3><div id="salesSources"></div></div>
+    </section>
+
+    <!-- PROMOTIONS -->
+    <section id="tab-promos" class="hidden">
+      <div class="card">
+        <h3>Offer codes</h3>
+        <div class="muted">Give a code to a lead. When you record their payment (Customers, then Extend), type the code and it adjusts the amount or adds free days.</div>
+        <div class="grid" style="margin-top:6px">
+          <div><label>Code</label><input id="pcCode" placeholder="e.g. HORNBILL25" style="text-transform:uppercase"></div>
+          <div><label>What it does</label><select id="pcType"><option value="percent">Percent off</option><option value="flat">Rupees off</option><option value="freedays">Free extra days</option></select></div>
+          <div><label>Value (percent, rupees or days)</label><input id="pcValue" inputmode="decimal"></div>
+          <div><label>Last day</label><input id="pcExp" type="date"></div>
+          <div><label>Max uses (0 = no limit)</label><input id="pcMax" inputmode="numeric" value="0"></div>
+          <div><label>Campaign</label><select id="pcCamp"></select></div>
+        </div>
+        <div class="row"><button class="act primary" id="pcSave">Save code</button><span id="pcMsg" class="muted"></span></div>
+        <div class="scroll" style="margin-top:8px;max-height:300px"><table id="pcTable"></table></div>
+      </div>
+      <div class="card">
+        <h3>Campaigns</h3>
+        <div class="muted">A campaign groups a promotion with dates and a goal, so you can see what it brought in. Tag leads with a campaign in the lead form; codes can be tied to one here.</div>
+        <div class="grid" style="margin-top:6px">
+          <div><label>Name</label><input id="cmName" placeholder="e.g. Hornbill week"></div>
+          <div><label>Start</label><input id="cmStart" type="date"></div>
+          <div><label>End</label><input id="cmEnd" type="date"></div>
+          <div><label>Goal: new shops</label><input id="cmGoal" inputmode="numeric"></div>
+        </div>
+        <label>Notes (offer, audience, message)</label><input id="cmNote">
+        <div class="row"><button class="act primary" id="cmSave">Save campaign</button><span id="cmMsg" class="muted"></span></div>
+        <div id="cmList" style="margin-top:8px"></div>
+      </div>
+      <div class="card">
+        <h3>Referral rewards</h3>
+        <div class="muted">When a shop brings another shop, record it here. Once the new shop has paid, give the referrer free days with one click.</div>
+        <div class="grid" style="margin-top:6px">
+          <div><label>Shop that was referred</label><select id="rfNew"></select></div>
+          <div><label>Shop that referred them</label><select id="rfBy"></select></div>
+          <div><label>Reward (free days)</label><input id="rfDays" inputmode="numeric" value="30"></div>
+        </div>
+        <div class="row"><button class="act primary" id="rfSave">Record referral</button><span id="rfMsg" class="muted"></span></div>
+        <div class="scroll" style="margin-top:8px;max-height:280px"><table id="rfTable"></table></div>
+      </div>
+      <div class="card">
+        <h3>Notice to a group of shops</h3>
+        <div class="muted">Shows in the dashboard of every shop in the group, as your Notice does for one shop. It stays until cleared, so clear it when the offer ends.</div>
+        <div class="grid" style="margin-top:6px"><div><label>Group</label><select id="gnSeg"></select></div></div>
+        <textarea id="gnText" rows="3" placeholder="e.g. Festival offer: pay for 3 months, get 15 extra days. Use code HORNBILL25."></textarea>
+        <div class="row"><button class="act primary" id="gnSend">Send notice to group</button><button class="act" id="gnClear">Clear notice for group</button><span id="gnMsg" class="muted"></span></div>
+      </div>
+    </section>
+
+    <section id="tab-customers" class="hidden">
       <div class="stats" id="stats"></div>
       <div class="card">
         <div class="row" style="margin-top:0">
@@ -139,6 +249,16 @@
     <!-- REACH OUT -->
     <section id="tab-broadcast" class="hidden">
       <div class="card">
+        <h3>Message templates</h3>
+        <div class="muted">Used for every one-tap WhatsApp button in the admin. Fill-ins: {name} {business} {owner} {town} {date} {link} {price}. You still press send in WhatsApp. Send to people you know or who asked about Owi; WhatsApp can ban numbers that message strangers in bulk.</div>
+        <div id="tplList" style="margin-top:8px"></div>
+        <div class="row"><button class="act" id="tplNew">New template</button></div>
+        <label>Signature added to every message (leave empty for none)</label>
+        <textarea id="sigText" rows="4"></textarea>
+        <div class="row"><button class="act primary" id="sigSave">Save signature</button><span id="sigMsg" class="muted"></span></div>
+      </div>
+      <div class="card"><h3>Messages sent from here (last 100)</h3><div class="scroll" style="max-height:300px"><table id="outTable"></table></div></div>
+      <div class="card">
         <h3>Announcement to every customer's app</h3>
         <div class="muted">Shows as a blue banner on the dashboard of every business. Users can dismiss it for the session.</div>
         <textarea id="annText" rows="3" placeholder="e.g. The app will be updated tonight 10 PM. Please keep your phone online."></textarea>
@@ -177,11 +297,10 @@
         <div class="muted">Firebase does not let a web page read its own usage meter, so this is an <b>estimate</b>: it counts the records of every business and measures a small sample of each kind. Treat it as accurate to roughly &plusmn;25%. The exact figure is always on the Firebase usage page.</div>
         <div class="row">
           <button class="act primary" id="fbMeasure">Measure now</button>
-          <a class="act" style="text-decoration:none;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px" target="_blank" rel="noopener" href="https://console.firebase.google.com/project/owuinungpos/database/owuinungpos-default-rtdb/usage">Open exact usage in Firebase</a>
+          <a class="act" target="_blank" rel="noopener" href="https://console.firebase.google.com/project/owuinungpos/database/owuinungpos-default-rtdb/usage">Open exact usage in Firebase</a>
         </div>
         <div id="fbBox" style="margin-top:10px" class="muted">Press Measure now. It downloads a small sample from every business (usually a few MB) and counts against the free monthly download allowance, so use it when you need it, not all day.</div>
       </div>
-    </section>
 
     <div class="card" id="pjCard">
       <h3>Projection against the free Spark limits</h3>
@@ -195,6 +314,7 @@
       </div>
       <div id="pjOut" style="margin-top:10px" class="muted">Waiting for a measurement.</div>
     </div>
+    </section>
 
     <!-- PAYMENT DETAILS -->
     <section id="tab-payment" class="hidden">
@@ -218,6 +338,7 @@
 </main>
 
 <dialog id="detail"><div class="dhead"><b id="dTitle"></b><button id="dClose">Close</button></div><div class="dbody" id="dBody"></div></dialog>
+<dialog id="leadDlg"><div class="dhead"><b id="leadTitle">Lead</b><button id="leadClose">Close</button></div><div class="dbody" id="leadBody"></div></dialog>
 <dialog id="payDlg"><div class="dhead"><b id="pdTitle">Record payment</b><button id="pdClose">Close</button></div><div class="dbody" id="pdBody"></div></dialog>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -284,6 +405,7 @@ auth.onAuthStateChanged(async user => {
   listen('config/app', v => { appCfg = v || {}; renderAppCfg(); });
   listen('payments', v => { payments = Object.entries(v || {}).map(([id, p]) => ({ id, ...p })); renderRevenue(); if (openId) renderDetail(); });
   listen('auditLog', v => { audit = Object.entries(v || {}).map(([id, a]) => ({ id, ...a })); renderRevenue(); if (openId) renderDetail(); });
+  startGrowthListeners();
   loadBusinesses();
 });
 
@@ -302,10 +424,10 @@ async function loadBusinesses() {
 document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
 function showTab(t) {
   document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x.dataset.tab === t));
-  ['customers', 'support', 'revenue', 'broadcast', 'payment', 'storage'].forEach(n => $('tab-' + n).classList.toggle('hidden', n !== t));
+  ['today', 'customers', 'usage', 'leads', 'sales', 'promos', 'broadcast', 'support', 'revenue', 'payment', 'storage'].forEach(n => $('tab-' + n).classList.toggle('hidden', n !== t));
   if (t === 'storage') loadGithub();
 }
-function renderAll() { renderCustomers(); renderTickets(); renderRevenue(); renderReminders(); }
+function renderAll() { renderCustomers(); renderTickets(); renderRevenue(); renderReminders(); if (typeof renderGrowth === 'function') renderGrowth(); maybeSnapshot(); }
 
 // ---------- helpers on a customer ----------
 function statusOf(s) {
@@ -370,7 +492,7 @@ function customerCard(s) {
     <div class="row">
       <button class="act primary" data-open="${esc(s.id)}">Open</button>
       ${st === 'pending' ? `<button class="act" data-quick="approve" data-id="${esc(s.id)}">Approve ${TRIAL_DAYS}-day trial</button>` : ''}
-      ${waLink(ownerPhone(s.id)) ? `<a class="act" style="text-decoration:none;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px" target="_blank" rel="noopener" href="${waLink(ownerPhone(s.id))}">WhatsApp</a>` : ''}
+      ${waLink(ownerPhone(s.id)) ? `<a class="act" target="_blank" rel="noopener" href="${waLink(ownerPhone(s.id))}">WhatsApp</a>` : ''}
     </div>
   </div>`;
 }
@@ -426,7 +548,7 @@ async function applyChange(id, fields, action, detail, pay) {
   const updates = {};
   Object.entries({ ...fields, updatedAt: now, updatedBy: auth.currentUser.uid }).forEach(([k, v]) => updates[`subscriptions/${id}/${k}`] = v);
   updates[`auditLog/${db.ref('auditLog').push().key}`] = { businessId: id, businessName: s.businessName || '', action, detail, at: now, by: auth.currentUser.email };
-  if (pay) updates[`payments/${db.ref('payments').push().key}`] = { businessId: id, businessName: s.businessName || '', amount: pay.amount, method: pay.method, reference: pay.reference, months: pay.months, paidAt: pay.paidAt, recordedAt: now, by: auth.currentUser.email };
+  if (pay) updates[`payments/${db.ref('payments').push().key}`] = { businessId: id, businessName: s.businessName || '', amount: pay.amount, method: pay.method, reference: pay.reference, months: pay.months, paidAt: pay.paidAt, recordedAt: now, by: auth.currentUser.email, ...(pay.promo ? { promo: pay.promo } : {}) };
   await db.ref().update(updates);
 }
 function approve(id) {
@@ -444,6 +566,7 @@ function openPayDlg(id, months) {
   $('pdBody').innerHTML = `
     <div class="card">
       <div class="muted">New end date: <b>${fmtD(newEnd)}</b></div>
+      <label>Offer code (optional)</label><div class="row" style="margin-top:4px"><input id="payCode" class="grow" placeholder="e.g. HORNBILL25" style="text-transform:uppercase;margin:0"><button class="act" id="payCodeApply" type="button">Apply code</button></div><div id="payCodeMsg" class="muted"></div>
       <label>Amount received (₹) — leave 0 for a free extension</label><input id="payAmt" inputmode="decimal" value="${esc(amt)}">
       <label>Method</label><select id="payMethod"><option>UPI</option><option>Cash</option><option>Bank transfer</option><option>Free / complimentary</option><option>Other</option></select>
       <label>Reference (UPI transaction ID, note)</label><input id="payRef">
@@ -451,10 +574,25 @@ function openPayDlg(id, months) {
       <div class="row"><button class="act primary" id="paySave">Save and extend</button></div>
     </div>`;
   $('payDlg').showModal();
+  let promo = '', bonusDays = 0;
+  $('payCodeApply').onclick = () => {
+    const code = $('payCode').value.trim().toUpperCase(), c = codes[code], m = $('payCodeMsg');
+    promo = ''; bonusDays = 0;
+    if (!code) { m.textContent = ''; return; }
+    if (!c) { m.textContent = 'No such code.'; return; }
+    const stt = codeState(c); if (stt !== 'live') { m.textContent = 'This code is ' + stt + '.'; return; }
+    if ((c.redeemedBy || {})[id]) { m.textContent = 'This shop already used this code.'; return; }
+    const base = unit ? Number(unit) * months : Number($('payAmt').value) || 0;
+    if (c.type === 'percent') $('payAmt').value = Math.max(0, Math.round(base * (1 - c.value / 100)));
+    else if (c.type === 'flat') $('payAmt').value = Math.max(0, base - c.value);
+    else bonusDays = c.value;
+    promo = code; m.innerHTML = '<b style="color:var(--green)">Applied: ' + esc(codeText(c)) + '</b>' + (bonusDays ? ' · new end date ' + fmtD(newEnd + bonusDays * DAY) : '');
+  };
   $('paySave').onclick = async () => {
-    const amount = Number($('payAmt').value) || 0, paidAt = new Date($('payDate').value + 'T12:00:00').getTime() || Date.now();
+    const amount = Number($('payAmt').value) || 0, paidAt = new Date($('payDate').value + 'T12:00:00').getTime() || Date.now(), endAt = newEnd + bonusDays * DAY;
     try {
-      await applyChange(id, { plan: 'paid', validUntil: newEnd }, 'extend', `+${months} month(s) until ${fmtD(newEnd)}`, { amount, method: $('payMethod').value, reference: $('payRef').value.trim(), months, paidAt });
+      await applyChange(id, { plan: 'paid', validUntil: endAt }, 'extend', `+${months} month(s)${bonusDays ? ' +' + bonusDays + ' free days' : ''} until ${fmtD(endAt)}${promo ? ' (code ' + promo + ')' : ''}`, { amount, method: $('payMethod').value, reference: $('payRef').value.trim(), months, paidAt, promo });
+      if (promo) await db.ref('promoCodes/' + promo).update({ uses: (codes[promo].uses || 0) + 1, ['redeemedBy/' + id]: Date.now() }).catch(() => {});
       $('payDlg').close();
     } catch (e) { alert('Failed: ' + e.message); }
   };
@@ -903,6 +1041,395 @@ $('fbMeasure').onclick = async () => {
   } catch (e) { box.innerHTML = `<div class="err">${esc(e.message)}</div>`; }
   btn.disabled = false;
 };
+
+// =====================================================================
+// GROWTH TOOLS: today, usage, leads, sales, promotions, marketing
+// =====================================================================
+let leads = [], codes = {}, campaigns = [], templates = {}, outreach = [], referrals = {}, stats = {}, settings = {};
+let statsLoaded = false, snapshotDone = false, rulesMissing = false;
+const LINK = 'https://owuinung-spec.github.io/download.html';
+const SIG_DEFAULT = 'Best regards,\nTochi Manen\nPh: +14423760919\nEmail: tochimanen0000@gmail.com';
+const LEAD_STATUS = ['new', 'contacted', 'demo', 'trial', 'won', 'lost'];
+const LEAD_LABEL = { new: 'New', contacted: 'Contacted', demo: 'Demo given', trial: 'On trial', won: 'Won', lost: 'Lost' };
+const SOURCES = ['Walk-in', 'WhatsApp', 'Phone call', 'Referral', 'Website', 'OpenStreetMap', 'Web research', 'Event', 'Other'];
+const MSG_TPL = {
+  intro: { name: 'First message to a new lead', text: 'Hello {name}, I am Tochi from Owuinüng. We make Owi Compass, a simple billing and stock app for small shops. It shows your daily sales, what is running low and what you really earn, and it is free to start. Would you like a 2-minute look? {link}' },
+  followup: { name: 'Follow up with a lead', text: 'Hello {name}, just checking in about Owi Compass for {business}. Happy to answer any question or show you how billing and stock work. Would this week suit you?' },
+  trialEnding: { name: 'Trial ending soon', text: 'Hello {name}, your Owi Compass trial for {business} ends on {date}. If it has been useful, we can keep you going for {price}. Tell me and I will help you set it up.' },
+  notStarted: { name: 'Shop has not started', text: 'Hello {name}, I saw {business} is set up on Owi Compass but no products are added yet. Adding your top 10 items takes about 5 minutes. Shall I guide you over a call?' },
+  stalled: { name: 'Products added, no bills yet', text: 'Hello {name}, you have added your products on Owi Compass. The next step is making your first bill: New Sale, pick items, Pay. Would you like me to walk you through it?' },
+  dormant: { name: 'Shop gone quiet', text: 'Hello {name}, I noticed {business} has not used Owi Compass for a while. Is anything not working for you, or anything you would like changed? Your feedback helps us a lot.' },
+  renewal: { name: 'Renewal reminder', text: 'Hello {name}, your Owi Compass plan for {business} is valid until {date}. To renew for {price}, you can pay by UPI and I will extend it right away.' },
+  lapsed: { name: 'Plan has ended', text: 'Hello {name}, your Owi Compass plan for {business} ended on {date}. Your data is safe. Renew for {price} to get reports, forecast and staff access back.' },
+  referral: { name: 'Thank you for referring', text: 'Hello {name}, thank you for recommending Owi Compass. We have added free days to {business} as a thank-you.' },
+  offer: { name: 'Seasonal offer', text: 'Hello {name}, a special offer on Owi Compass this season for {business}. Message me to get the code.' }
+};
+const SEGMENTS = [['all', 'All shops'], ['trial', 'Shops on trial'], ['paid', 'Paying shops'], ['free', 'Shops on the free plan'], ['lapsed', 'Plan ended'], ['stalled', 'Not started or no bills yet'], ['dormant', 'Slowing or dormant']];
+const sigText = () => settings.signature != null ? settings.signature : SIG_DEFAULT;
+const getTpl = id => templates[id] || MSG_TPL[id] || { name: id, text: '' };
+const fill = (t, v) => String(t || '').replace(/\{(\w+)\}/g, (_, k) => v[k] != null ? v[k] : '');
+function buildMsg(tplId, v) { const body = fill(getTpl(tplId).text, v), sig = sigText().trim(); return sig ? body + '\n\n' + sig : body; }
+function ago(ms) { if (!ms) return ''; const d = Math.floor((Date.now() - ms) / DAY); return d <= 0 ? 'today' : d === 1 ? 'yesterday' : d + ' days ago'; }
+const dayKey = (t = Date.now()) => { const d = new Date(t); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const dateMs = s => s ? new Date(s + 'T12:00:00').getTime() : 0;
+const msDate = ms => ms ? dayKey(ms) : '';
+const priceOf = () => payment.price || (payment.amount ? '₹' + payment.amount + ' a month' : '');
+function notBlocked(fn) { try { fn(); } catch (e) { console.error(e); } }
+
+function listenNew(path, cb) {
+  const ref = db.ref(path);
+  const fn = s => { try { cb(s.val()); } catch (e) { console.error(path, e); } };
+  ref.on('value', fn, err => { rulesMissing = true; $('rulesBanner').classList.remove('hidden'); console.warn(path, err.message); });
+  listeners.push([ref, fn]);
+}
+function startGrowthListeners() {
+  listenNew('leads', v => { leads = Object.entries(v || {}).map(([id, l]) => ({ id, ...l })); renderGrowth(); });
+  listenNew('promoCodes', v => { codes = v || {}; renderGrowth(); });
+  listenNew('campaigns', v => { campaigns = Object.entries(v || {}).map(([id, c]) => ({ id, ...c })); renderGrowth(); });
+  listenNew('msgTemplates', v => { templates = v || {}; renderGrowth(); });
+  listenNew('outreach', v => { outreach = Object.entries(v || {}).map(([id, o]) => ({ id, ...o })).sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, 400); renderGrowth(); });
+  listenNew('referrals', v => { referrals = v || {}; renderGrowth(); });
+  listenNew('adminStats', v => { stats = v || {}; statsLoaded = true; renderGrowth(); maybeSnapshot(); });
+  listenNew('adminSettings', v => { settings = v || {}; renderGrowth(); });
+}
+function renderGrowth() {
+  [renderToday, renderUsage, renderLeads, renderSales, renderPromos, renderMarketing].forEach(f => notBlocked(f));
+}
+
+// ---------- shop health ----------
+function healthOf(s) {
+  const u = usage[s.id]; if (!u) return 'unknown';
+  const prod = u.productCount || 0, tot = u.totalBills || 0, la = u.lastActiveAt || 0, now = Date.now();
+  if (!prod && !tot) return 'notstarted';
+  if (!tot) return 'stalled';
+  if (la && now - la <= 7 * DAY) return 'active';
+  if (la && now - la <= 14 * DAY) return 'slowing';
+  return 'dormant';
+}
+const HEALTH_LABEL = { active: 'Active', slowing: 'Slowing', dormant: 'Dormant', stalled: 'Stalled', notstarted: 'Not started', unknown: 'No data yet' };
+const HEALTH_CSS = { active: 'p-life', slowing: 'p-pending', dormant: 'p-expired', stalled: 'p-pending', notstarted: 'p-free', unknown: '' };
+const healthPill = h => `<span class="pill ${HEALTH_CSS[h]}"${h === 'unknown' ? ' style="background:#eceff1;color:#546e7a"' : ''}>${HEALTH_LABEL[h]}</span>`;
+function signedUp(s) { return s.trialStartedAt || bizOf(s.id).createdAt || 0; }
+function inSeg(s, seg) {
+  const st = statusOf(s), h = healthOf(s);
+  switch (seg) {
+    case 'all': return true;
+    case 'trial': return st === 'active' && s.plan === 'trial';
+    case 'paid': return st === 'active' && s.plan === 'paid';
+    case 'free': return st === 'free';
+    case 'lapsed': return st === 'expired' || lapsed(s);
+    case 'stalled': return h === 'stalled' || h === 'notstarted';
+    case 'dormant': return h === 'dormant' || h === 'slowing';
+  }
+  return false;
+}
+
+// ---------- outreach (WhatsApp one-tap + log) ----------
+function lastOutMap() { const m = {}; outreach.forEach(o => { const k = o.kind + ':' + o.target; if (!m[k] || o.at > m[k]) m[k] = o.at; }); return m; }
+function varsForShop(s) { const o = s.ownerName || s.businessName || ''; return { name: String(o).split(' ')[0] || o, business: s.businessName || '', owner: s.ownerName || '', date: fmtD(s.validUntil), price: priceOf(), link: LINK }; }
+function varsForLead(l) { return { name: l.name || l.business || '', business: l.business || l.name || '', town: l.town || '', link: LINK, price: priceOf(), date: '' }; }
+function waBtn(kind, id, tpl, label) { return `<button class="act" data-act="wa" data-kind="${kind}" data-id="${esc(id)}" data-tpl="${esc(tpl)}">${esc(label || 'WhatsApp')}</button>`; }
+async function sendWA(kind, id, tplId) {
+  let phone = '', vars = {}, name = '';
+  if (kind === 'shop') { const s = subs.find(x => x.id === id); if (!s) return; phone = ownerPhone(id); vars = varsForShop(s); name = s.businessName; }
+  else { const l = leads.find(x => x.id === id); if (!l) return; phone = l.phone; vars = varsForLead(l); name = l.business || l.name; }
+  if (!digits(phone)) { alert('No phone number saved for ' + name + '.'); return; }
+  const url = waLink(phone, buildMsg(tplId, vars));
+  window.open(url, '_blank', 'noopener');
+  const now = Date.now();
+  try {
+    await db.ref('outreach').push({ at: now, kind, target: id, name, tpl: getTpl(tplId).name || tplId, by: auth.currentUser.email });
+    if (kind === 'lead') { const l = leads.find(x => x.id === id); const up = { lastContactedAt: now, updatedAt: now }; if (l && l.status === 'new') up.status = 'contacted'; await db.ref('leads/' + id).update(up); }
+  } catch (e) { console.warn(e); }
+}
+
+// ---------- TODAY ----------
+function renderToday() {
+  const now = Date.now(), lo = lastOutMap(), items = [];
+  const add = (group, kind, id, title, reason, tpl, extra) => items.push({ group, kind, id, title, reason, tpl, extra: extra || '', out: lo[kind + ':' + id] });
+  leads.filter(l => l.status !== 'won' && l.status !== 'lost' && l.nextFollowUp && l.nextFollowUp <= now + DAY).forEach(l => add('Leads to follow up', 'lead', l.id, (l.business || l.name || 'Lead') + (l.town ? ', ' + l.town : ''), (l.nextFollowUp < now - DAY ? 'follow-up overdue since ' + fmtD(l.nextFollowUp) : 'follow-up due ' + fmtD(l.nextFollowUp)) + ' · ' + LEAD_LABEL[l.status || 'new'], l.status === 'new' ? 'intro' : 'followup'));
+  leads.filter(l => (l.status || 'new') === 'new' && !l.nextFollowUp && !l.lastContactedAt).slice(0, 10).forEach(l => add('New leads not yet contacted', 'lead', l.id, (l.business || l.name || 'Lead') + (l.town ? ', ' + l.town : ''), 'added ' + ago(l.createdAt), 'intro'));
+  subs.forEach(s => {
+    const st = statusOf(s), h = healthOf(s), left = ((s.validUntil || 0) - now) / DAY, su = signedUp(s);
+    if (st === 'active' && s.plan === 'trial' && left <= 3 && left > -1) add('Trials ending in 3 days', 'shop', s.id, s.businessName, 'trial ends ' + fmtD(s.validUntil) + ' · ' + (usage[s.id] ? (usage[s.id].totalBills || 0) + ' bills so far' : 'no usage data'), 'trialEnding');
+    if (st === 'active' && s.plan === 'paid' && left <= 7 && left > -1) add('Paid plans to renew', 'shop', s.id, s.businessName, 'ends ' + fmtD(s.validUntil), 'renewal');
+    if ((st === 'expired' || lapsed(s)) && s.validUntil && now - s.validUntil <= 30 * DAY) add('Plans that just ended', 'shop', s.id, s.businessName, 'ended ' + fmtD(s.validUntil), 'lapsed');
+    if (h === 'notstarted' && su && now - su >= 3 * DAY) add('Shops that have not started', 'shop', s.id, s.businessName, 'signed up ' + ago(su) + ', no products yet', 'notStarted');
+    if (h === 'stalled' && su && now - su >= 3 * DAY) add('Shops that added products but never billed', 'shop', s.id, s.businessName, (usage[s.id].productCount || 0) + ' products, no bills yet', 'stalled');
+    if (h === 'dormant' && st === 'active') add('Paying or trial shops gone quiet', 'shop', s.id, s.businessName, 'last active ' + ago((usage[s.id] || {}).lastActiveAt), 'dormant');
+  });
+  Object.entries(referrals).forEach(([newId, r]) => {
+    if (r && !r.rewardedAt && payments.some(p => p.businessId === newId && Number(p.amount) > 0)) { const rb = subs.find(x => x.id === r.referrerId); add('Referral rewards due', 'shop', r.referrerId, (rb ? rb.businessName : r.referrerId), 'referred ' + ((subs.find(x => x.id === newId) || {}).businessName || newId) + ', who has paid · give ' + (r.days || 30) + ' free days in Promotions', 'referral'); }
+  });
+  const open = tickets.filter(t => t.status !== 'closed' && t.status !== 'resolved').length;
+  const attention = items.filter(i => !i.out || now - i.out > 3 * DAY).length;
+  $('todayStats').innerHTML = `<div class="stat"><b>${attention}</b>people to contact today</div><div class="stat"><b>${open}</b>open support tickets</div><div class="stat"><b>${subs.filter(s => statusOf(s) === 'pending').length}</b>awaiting approval</div><div class="stat"><b>${leads.filter(l => l.status !== 'won' && l.status !== 'lost').length}</b>open leads</div>`;
+  const groups = {}; items.forEach(i => (groups[i.group] = groups[i.group] || []).push(i));
+  const html = Object.entries(groups).map(([g, arr]) => `<div class="card"><h3>${esc(g)} <span class="muted">(${arr.length})</span></h3>
+    ${arr.map(i => `<div class="row" style="justify-content:space-between;border-top:1px solid var(--line);padding-top:6px;margin-top:6px"><div class="grow"><b>${esc(i.title)}</b><div class="muted">${esc(i.reason)}${i.out ? ' · <span style="color:var(--amber)">messaged ' + ago(i.out) + '</span>' : ''}</div></div>${waBtn(i.kind, i.id, i.tpl, 'WhatsApp')}${i.kind === 'lead' ? `<button class="act" data-act="lead-edit" data-id="${esc(i.id)}">Open</button>` : `<button class="act" data-act="shop-open" data-id="${esc(i.id)}">Open</button>`}</div>`).join('')}</div>`).join('');
+  $('todayBox').innerHTML = html || '<div class="card"><div class="muted">Nothing needs you today. New work shows up here by itself: leads to follow up, trials ending, shops that have stalled, renewals and referral rewards.</div></div>';
+}
+
+// ---------- USAGE ----------
+function usageRows() {
+  return subs.map(s => { const u = usage[s.id] || {}; return { s, u, h: healthOf(s), su: signedUp(s) }; });
+}
+function renderUsage() {
+  const rows = usageRows(), now = Date.now();
+  const n = rows.length, act = d => rows.filter(r => r.u.lastActiveAt && now - r.u.lastActiveAt <= d * DAY).length;
+  const sum = k => rows.reduce((a, r) => a + (Number(r.u[k]) || 0), 0);
+  $('usageStats').innerHTML = `<div class="stat"><b>${n}</b>shops</div><div class="stat"><b>${act(1)}</b>active today</div><div class="stat"><b>${act(7)}</b>active in 7 days</div><div class="stat"><b>${act(30)}</b>active in 30 days</div><div class="stat"><b>${sum('totalBills')}</b>bills ever</div><div class="stat"><b>${sum('bills30d')}</b>bills in 30 days</div><div class="stat"><b>${money(sum('sales30d'))}</b>sales in 30 days</div>`;
+  const steps = [['Signed up', n], ['Opened the app', rows.filter(r => r.u.lastActiveAt).length], ['Added products', rows.filter(r => (r.u.productCount || 0) > 0).length], ['Made a bill', rows.filter(r => (r.u.totalBills || 0) > 0).length], ['Billing in last 7 days', rows.filter(r => r.h === 'active').length], ['Paying', rows.filter(r => statusOf(r.s) === 'active' && r.s.plan === 'paid').length]];
+  $('usageFunnel').innerHTML = steps.map(([l, v]) => `<div style="display:flex;align-items:center;gap:8px;margin:4px 0;font-size:13px"><div style="width:190px">${l}</div><div style="flex:1;background:#eceff1;border-radius:99px;height:14px;overflow:hidden"><div style="height:100%;width:${n ? (v / n * 100).toFixed(0) : 0}%;background:var(--green)"></div></div><b style="width:60px;text-align:right">${v}${n ? ' · ' + (v / n * 100).toFixed(0) + '%' : ''}</b></div>`).join('');
+  const days = Object.keys(stats).sort().slice(-30);
+  if (days.length >= 2) {
+    const series = (key, label, colour) => { const vals = days.map(d => Number(stats[d][key]) || 0), mx = Math.max(1, ...vals); return `<div style="margin:8px 0"><div style="font-size:12px"><b>${label}</b> · latest ${vals[vals.length - 1]}</div><div style="display:flex;align-items:flex-end;gap:2px;height:46px">${vals.map((v, i) => `<div title="${days[i]}: ${v}" style="flex:1;max-width:20px;background:${colour};height:${Math.max(2, v / mx * 46)}px;border-radius:2px 2px 0 0"></div>`).join('')}</div></div>`; };
+    $('usageTrend').innerHTML = series('active7', 'Shops active in the last 7 days', 'var(--green)') + series('bills30d', 'Bills in the last 30 days', 'var(--blue)') + series('sales30d', 'Sales in the last 30 days (₹)', '#00838f') + `<div class="muted">${days.length} daily snapshots, ${days[0]} to ${days[days.length - 1]}.</div>`;
+  } else $('usageTrend').textContent = days.length ? 'One snapshot saved so far. The trend appears from the second day.' : (rulesMissing ? 'Publish the new rules first (see the red box at the top).' : 'No history yet. A snapshot is saved the first time you open the page each day.');
+  const f = $('usageFilter').value, order = { dormant: 0, slowing: 1, stalled: 2, notstarted: 3, unknown: 4, active: 5 };
+  const list = rows.filter(r => !f || r.h === f).sort((a, b) => order[a.h] - order[b.h] || (b.u.lastActiveAt || 0) - (a.u.lastActiveAt || 0));
+  const tplFor = { dormant: 'dormant', slowing: 'dormant', stalled: 'stalled', notstarted: 'notStarted' };
+  $('usageTable').innerHTML = `<tr><th>Shop</th><th>Health</th><th>Plan</th><th>Signed up</th><th>Last active</th><th>Products</th><th>Bills (all)</th><th>Bills (30d)</th><th>Sales (30d)</th><th></th></tr>` +
+    (list.map(r => `<tr><td><a href="#" data-act="shop-open" data-id="${esc(r.s.id)}">${esc(r.s.businessName || r.s.id)}</a><div class="muted">${esc(r.s.ownerName || '')}</div></td><td>${healthPill(r.h)}</td><td><span class="pill ${PILL[statusOf(r.s)]}">${esc(LABEL[statusOf(r.s)])}</span></td><td>${fmtD(r.su)}</td><td>${r.u.lastActiveAt ? fmtD(r.u.lastActiveAt) + '<div class="muted">' + esc(r.u.lastUserName || '') + '</div>' : '-'}</td><td>${r.u.productCount != null ? r.u.productCount : '-'}</td><td>${r.u.totalBills != null ? r.u.totalBills : '-'}</td><td>${r.u.bills30d != null ? r.u.bills30d : '-'}</td><td>${r.u.sales30d != null ? money(r.u.sales30d) : '-'}</td><td>${tplFor[r.h] ? waBtn('shop', r.s.id, tplFor[r.h], 'Nudge') : ''}</td></tr>`).join('') || '<tr><td colspan="10" class="muted">Nothing in this state.</td></tr>');
+}
+$('usageFilter').onchange = () => renderUsage();
+$('usageExport').onclick = () => download('owi-usage-' + dayKey() + '.csv', toCsv([['Shop', 'Owner', 'Health', 'Plan', 'Signed up', 'Last active', 'Products', 'Bills all', 'Bills 30d', 'Sales 30d', 'ID']].concat(usageRows().map(r => [r.s.businessName, r.s.ownerName, HEALTH_LABEL[r.h], LABEL[statusOf(r.s)], fmtD(r.su), fmtD(r.u.lastActiveAt), r.u.productCount, r.u.totalBills, r.u.bills30d, r.u.sales30d, r.s.id]))));
+async function maybeSnapshot() {
+  if (snapshotDone || !statsLoaded || !subs.length || !Object.keys(usage).length) return;
+  const key = dayKey(); snapshotDone = true;
+  if (stats[key]) return;
+  const rows = usageRows(), now = Date.now(), sum = k => rows.reduce((a, r) => a + (Number(r.u[k]) || 0), 0), act = d => rows.filter(r => r.u.lastActiveAt && now - r.u.lastActiveAt <= d * DAY).length;
+  try { await db.ref('adminStats/' + key).set({ at: now, shops: rows.length, active1: act(1), active7: act(7), active30: act(30), notStarted: rows.filter(r => r.h === 'notstarted').length, stalled: rows.filter(r => r.h === 'stalled').length, billsTotal: sum('totalBills'), bills30d: sum('bills30d'), sales30d: sum('sales30d'), paying: rows.filter(r => statusOf(r.s) === 'active' && r.s.plan === 'paid').length, trial: rows.filter(r => statusOf(r.s) === 'active' && r.s.plan === 'trial').length, leads: leads.length }); } catch (e) { console.warn(e); }
+}
+
+// ---------- LEADS ----------
+function renderLeads() {
+  const f = $('leadFilter'); if (!f.options.length) { f.innerHTML = '<option value="">All statuses</option><option value="open">Open only</option>' + LEAD_STATUS.map(s => `<option value="${s}">${LEAD_LABEL[s]}</option>`).join(''); }
+  const cnt = s => leads.filter(l => (l.status || 'new') === s).length;
+  $('leadStats').innerHTML = `<div class="stat"><b>${leads.length}</b>leads</div>` + LEAD_STATUS.map(s => `<div class="stat"><b>${cnt(s)}</b>${LEAD_LABEL[s].toLowerCase()}</div>`).join('');
+  const q = $('leadSearch').value.trim().toLowerCase(), sf = f.value, now = Date.now();
+  let list = leads.filter(l => (!sf || (sf === 'open' ? !['won', 'lost'].includes(l.status || 'new') : (l.status || 'new') === sf)) && (!q || [l.name, l.business, l.phone, l.town, l.notes].join(' ').toLowerCase().includes(q)));
+  list.sort((a, b) => { const fa = a.nextFollowUp || 9e15, fb = b.nextFollowUp || 9e15; return fa - fb || (b.createdAt || 0) - (a.createdAt || 0); });
+  $('leadTable').innerHTML = '<tr><th>Lead</th><th>Town</th><th>Status</th><th>Follow up</th><th>Last contact</th><th>Source</th><th></th></tr>' +
+    (list.map(l => `<tr><td><b>${esc(l.business || l.name || '-')}</b><div class="muted">${esc(l.business && l.name ? l.name : '')} ${esc(l.phone || '')}</div></td><td>${esc(l.town || '')}</td>
+      <td><select data-lead-status="${esc(l.id)}" style="margin:0;padding:4px">${LEAD_STATUS.map(s => `<option value="${s}"${(l.status || 'new') === s ? ' selected' : ''}>${LEAD_LABEL[s]}</option>`).join('')}</select></td>
+      <td${l.nextFollowUp && l.nextFollowUp < now - DAY && !['won', 'lost'].includes(l.status) ? ' style="color:var(--red);font-weight:700"' : ''}>${l.nextFollowUp ? fmtD(l.nextFollowUp) : '-'}</td><td>${l.lastContactedAt ? ago(l.lastContactedAt) : '-'}</td><td>${esc(l.source || '')}${l.campaign ? '<div class="muted">' + esc((campaigns.find(c => c.id === l.campaign) || {}).name || '') + '</div>' : ''}</td>
+      <td style="white-space:nowrap">${l.phone ? waBtn('lead', l.id, (l.status || 'new') === 'new' ? 'intro' : 'followup', 'WhatsApp') : ''} <button class="act" data-act="lead-edit" data-id="${esc(l.id)}">Edit</button></td></tr>`).join('') || `<tr><td colspan="7" class="muted">${leads.length ? 'No lead matches.' : 'No leads yet. Add one, import a list, or use the lead finder below.'}</td></tr>`);
+  const place = $('lfPlace').value.trim(), cat = $('lfCat').selectedOptions[0].textContent;
+  $('lfMaps').href = 'https://www.google.com/maps/search/' + encodeURIComponent((cat === 'Any shop' ? 'shops' : cat) + ' in ' + place);
+  $('lfWeb').href = 'https://www.google.com/search?q=' + encodeURIComponent((cat === 'Any shop' ? 'shops' : cat) + ' in ' + place + ' phone number');
+}
+['leadSearch', 'leadFilter'].forEach(id => $(id).addEventListener('input', () => renderLeads()));
+['lfPlace', 'lfCat'].forEach(id => $(id).addEventListener('input', () => renderLeads()));
+document.addEventListener('change', e => {
+  const sel = e.target.closest('[data-lead-status]'); if (!sel) return;
+  db.ref('leads/' + sel.dataset.leadStatus).update({ status: sel.value, updatedAt: Date.now() }).catch(err => alert(err.message));
+});
+$('leadAdd').onclick = () => openLead(null);
+function shopOptions(sel, blank) { return `<option value="">${blank}</option>` + subs.slice().sort((a, b) => (a.businessName || '').localeCompare(b.businessName || '')).map(s => `<option value="${esc(s.id)}"${s.id === sel ? ' selected' : ''}>${esc(s.businessName || s.id)}</option>`).join(''); }
+function openLead(id) {
+  const l = id ? leads.find(x => x.id === id) || {} : {};
+  $('leadTitle').textContent = id ? 'Edit lead' : 'New lead';
+  $('leadBody').innerHTML = `<div class="card">
+    <div class="grid"><div><label>Contact name</label><input id="lName" value="${esc(l.name || '')}"></div><div><label>Shop / business</label><input id="lBiz" value="${esc(l.business || '')}"></div>
+    <div><label>WhatsApp / phone</label><input id="lPhone" value="${esc(l.phone || '')}" inputmode="tel"></div><div><label>Email</label><input id="lEmail" value="${esc(l.email || '')}"></div>
+    <div><label>Town</label><input id="lTown" value="${esc(l.town || '')}"></div>
+    <div><label>Source</label><select id="lSrc">${SOURCES.map(s => `<option${l.source === s ? ' selected' : ''}>${s}</option>`).join('')}</select></div>
+    <div><label>Campaign</label><select id="lCamp"><option value="">None</option>${campaigns.map(c => `<option value="${esc(c.id)}"${l.campaign === c.id ? ' selected' : ''}>${esc(c.name)}</option>`).join('')}</select></div>
+    <div><label>Status</label><select id="lStat">${LEAD_STATUS.map(s => `<option value="${s}"${(l.status || 'new') === s ? ' selected' : ''}>${LEAD_LABEL[s]}</option>`).join('')}</select></div>
+    <div><label>Follow up on</label><input id="lFol" type="date" value="${msDate(l.nextFollowUp)}"></div>
+    <div><label>Their shop in Owi (once they sign up)</label><select id="lShop">${shopOptions(l.businessId, 'Not signed up yet')}</select></div>
+    <div><label>Referred by (a shop)</label><select id="lRef">${shopOptions(l.referredBy, 'Nobody')}</select></div></div>
+    <label>Notes</label><textarea id="lNotes" rows="3">${esc(l.notes || '')}</textarea>
+    <div class="row"><button class="act primary" id="lSave">Save</button>${id ? '<button class="act danger" id="lDel">Delete</button>' : ''}<span id="lMsg" class="muted"></span></div></div>`;
+  $('leadDlg').showModal();
+  $('lSave').onclick = async () => {
+    const now = Date.now(), rec = { name: $('lName').value.trim(), business: $('lBiz').value.trim(), phone: $('lPhone').value.trim(), email: $('lEmail').value.trim(), town: $('lTown').value.trim(), source: $('lSrc').value, campaign: $('lCamp').value, status: $('lStat').value, nextFollowUp: dateMs($('lFol').value), businessId: $('lShop').value, referredBy: $('lRef').value, notes: $('lNotes').value.trim(), updatedAt: now };
+    if (!rec.name && !rec.business) { $('lMsg').textContent = 'Enter a name or a shop.'; return; }
+    try {
+      if (id) await db.ref('leads/' + id).update(rec); else await db.ref('leads').push({ ...rec, createdAt: now });
+      if (rec.businessId && rec.referredBy && rec.businessId !== rec.referredBy && !referrals[rec.businessId]) await db.ref('referrals/' + rec.businessId).set({ referrerId: rec.referredBy, days: Number($('rfDays').value) || 30, createdAt: now });
+      $('leadDlg').close();
+    } catch (e) { $('lMsg').textContent = 'Failed: ' + e.message; }
+  };
+  if (id) $('lDel').onclick = async () => { if (confirm('Delete this lead permanently?')) { await db.ref('leads/' + id).remove(); $('leadDlg').close(); } };
+}
+$('leadClose').onclick = () => $('leadDlg').close();
+$('leadExport').onclick = () => download('owi-leads-' + dayKey() + '.csv', toCsv([['Business', 'Name', 'Phone', 'Email', 'Town', 'Status', 'Source', 'Follow up', 'Last contact', 'Notes']].concat(leads.map(l => [l.business, l.name, l.phone, l.email, l.town, LEAD_LABEL[l.status || 'new'], l.source, fmtD(l.nextFollowUp), fmtD(l.lastContactedAt), l.notes]))));
+
+// import (paste CSV or tab-separated from a spreadsheet)
+function parseCsv(text) {
+  const rows = []; let row = [], cur = '', q = false; const t = text.replace(/\r/g, '');
+  const sep = t.split('\n')[0].includes('\t') ? '\t' : ',';
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (q) { if (c === '"' && t[i + 1] === '"') { cur += '"'; i++; } else if (c === '"') q = false; else cur += c; }
+    else if (c === '"') q = true; else if (c === sep) { row.push(cur); cur = ''; } else if (c === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; } else cur += c;
+  }
+  row.push(cur); rows.push(row); return rows.filter(r => r.some(x => x.trim()));
+}
+$('leadImportBtn').onclick = () => {
+  $('leadTitle').textContent = 'Import leads';
+  $('leadBody').innerHTML = `<div class="card"><div class="muted">Paste rows from a spreadsheet or CSV. First row must be headings. Recognised headings: business, name, phone, email, town, source, notes. Leads whose phone number is already saved are skipped.</div>
+    <textarea id="impText" rows="8" placeholder="business,name,phone,town,notes&#10;Sunrise Stores,Atong,9436000000,Tuensang,Near the bus stand"></textarea>
+    <div class="row"><button class="act primary" id="impGo">Import</button><span id="impMsg" class="muted"></span></div></div>`;
+  $('leadDlg').showModal();
+  $('impGo').onclick = async () => {
+    const rows = parseCsv($('impText').value); if (rows.length < 2) { $('impMsg').textContent = 'Need a heading row and at least one lead.'; return; }
+    const head = rows[0].map(h => h.trim().toLowerCase()), idx = k => head.indexOf(k);
+    const have = new Set(leads.map(l => digits(l.phone).slice(-10)).filter(Boolean)); let added = 0, skipped = 0; const now = Date.now(), updates = {};
+    rows.slice(1).forEach(r => {
+      const g = k => idx(k) >= 0 ? (r[idx(k)] || '').trim() : '', ph = g('phone'), d = digits(ph).slice(-10);
+      if (!g('business') && !g('name')) return;
+      if (d && have.has(d)) { skipped++; return; } if (d) have.add(d);
+      updates['leads/' + db.ref('leads').push().key] = { business: g('business'), name: g('name'), phone: ph, email: g('email'), town: g('town'), source: g('source') || 'Web research', notes: g('notes'), status: 'new', createdAt: now, updatedAt: now }; added++;
+    });
+    try { if (added) await db.ref().update(updates); $('impMsg').textContent = `Added ${added}, skipped ${skipped} already saved.`; } catch (e) { $('impMsg').textContent = 'Failed: ' + e.message; }
+  };
+};
+
+// lead finder: Nominatim to place, Overpass to shops
+let lfResults = [];
+$('lfGo').onclick = async () => {
+  const msg = $('lfMsg'), out = $('lfOut'), place = $('lfPlace').value.trim(), cat = $('lfCat').value, km = Math.min(25, Math.max(1, Number($('lfRad').value) || 5));
+  if (!place) { msg.textContent = 'Enter a place.'; return; }
+  $('lfGo').disabled = true; out.innerHTML = ''; msg.textContent = 'Finding the place…';
+  try {
+    const g = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(place)).then(r => { if (!r.ok) throw new Error('Place search answered ' + r.status); return r.json(); });
+    if (!g.length) throw new Error('Could not find that place. Try "Town, State".');
+    const lat = g[0].lat, lon = g[0].lon, f = cat === 'all' ? '["shop"]' : `["shop"~"^(${cat})$"]`;
+    msg.textContent = 'Searching shops within ' + km + ' km of ' + g[0].display_name.split(',').slice(0, 2).join(',') + '…';
+    const q = `[out:json][timeout:25];(node${f}(around:${km * 1000},${lat},${lon});way${f}(around:${km * 1000},${lat},${lon}););out center tags 400;`;
+    const r = await fetch('https://overpass-api.de/api/interpreter', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'data=' + encodeURIComponent(q) });
+    if (!r.ok) throw new Error('Map data service answered ' + r.status + '. Try again in a minute.');
+    const j = await r.json(), have = new Set(leads.map(l => l.osmId).filter(Boolean)), haveNames = new Set([...leads.map(l => (l.business || '').toLowerCase()), ...subs.map(s => (s.businessName || '').toLowerCase())]);
+    const all = j.elements || [];
+    lfResults = all.filter(e => e.tags && e.tags.name).map(e => { const t = e.tags; return { osmId: e.type + '/' + e.id, business: t.name, kind: t.shop, phone: t.phone || t['contact:phone'] || t['contact:mobile'] || t['contact:whatsapp'] || '', web: t.website || t['contact:website'] || '', addr: [t['addr:housenumber'], t['addr:street'], t['addr:city']].filter(Boolean).join(' '), dup: have.has(e.type + '/' + e.id) || haveNames.has(t.name.toLowerCase()) }; });
+    msg.textContent = `${all.length} shop${all.length === 1 ? '' : 's'} on the map, ${lfResults.length} with a name${all.length - lfResults.length ? ' (' + (all.length - lfResults.length) + ' unnamed hidden)' : ''}.`;
+    renderFinder(place);
+  } catch (e) { msg.textContent = ''; out.innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+  $('lfGo').disabled = false;
+};
+function renderFinder(place) {
+  const out = $('lfOut');
+  if (!lfResults.length) { out.innerHTML = '<div class="muted">Nothing found. Try a bigger radius, another kind of shop, or the Google links above.</div>'; return; }
+  out.innerHTML = `<div class="scroll" style="max-height:380px"><table><tr><th></th><th>Shop</th><th>Type</th><th>Phone</th><th>Address</th><th></th></tr>${lfResults.map((x, i) => `<tr><td><input type="checkbox" data-lf="${i}"${x.dup ? ' disabled' : ' checked'}></td><td><b>${esc(x.business)}</b>${x.dup ? '<div class="muted">already in your leads or customers</div>' : ''}</td><td>${esc(x.kind || '')}</td><td>${esc(x.phone || '-')}</td><td>${esc(x.addr || '-')}</td><td><a target="_blank" rel="noopener" href="https://www.google.com/maps/search/${encodeURIComponent(x.business + ' ' + place)}">Check on Google</a></td></tr>`).join('')}</table></div>
+    <div class="row"><button class="act primary" id="lfAdd">Add ticked shops as leads</button></div>`;
+  $('lfAdd').onclick = async () => {
+    const now = Date.now(), updates = {}; let n = 0, town = place.split(',')[0].trim();
+    out.querySelectorAll('[data-lf]:checked').forEach(cb => { const x = lfResults[+cb.dataset.lf]; updates['leads/' + db.ref('leads').push().key] = { business: x.business, phone: x.phone, town, source: 'OpenStreetMap', notes: [x.kind ? 'Shop type: ' + x.kind : '', x.addr, x.web].filter(Boolean).join(' · '), osmId: x.osmId, status: 'new', createdAt: now, updatedAt: now }; n++; });
+    if (!n) { $('lfMsg').textContent = 'Tick at least one shop.'; return; }
+    try { await db.ref().update(updates); $('lfMsg').textContent = `Added ${n} lead${n === 1 ? '' : 's'}.`; } catch (e) { $('lfMsg').textContent = 'Failed: ' + e.message; }
+  };
+}
+
+// ---------- SALES ----------
+function renderSales() {
+  const now = Date.now(), unit = Number(payment.amount) || 0, addon = Number(payment.addonAmount) || 0;
+  const paying = subs.filter(s => statusOf(s) === 'active' && s.plan === 'paid');
+  const mrr = paying.reduce((a, s) => a + (s.extra ? (addon || unit) : unit), 0);
+  const rev30 = payments.filter(p => now - (p.paidAt || 0) <= 30 * DAY).reduce((a, p) => a + (Number(p.amount) || 0), 0);
+  const trials = subs.filter(s => statusOf(s) === 'active' && s.plan === 'trial');
+  const paidEver = new Set(payments.filter(p => Number(p.amount) > 0).map(p => p.businessId));
+  const trialEver = new Set([...subs.filter(s => s.plan === 'trial' || s.trialStartedAt).map(s => s.id), ...paidEver]);
+  const conv = trialEver.size ? Math.round(paidEver.size / trialEver.size * 100) : 0;
+  const due7 = paying.filter(s => (s.validUntil || 0) - now <= 7 * DAY), due30 = paying.filter(s => (s.validUntil || 0) - now <= 30 * DAY);
+  const lostMoney = subs.filter(s => (statusOf(s) === 'expired' || lapsed(s)) && s.validUntil && now - s.validUntil <= 60 * DAY);
+  $('salesStats').innerHTML = `<div class="stat"><b>${paying.length}</b>paying shops</div><div class="stat"><b>${money(mrr)}</b>monthly recurring (est.)</div><div class="stat"><b>${money(rev30)}</b>received, last 30 days</div><div class="stat"><b>${trials.length}</b>on trial now</div><div class="stat"><b>${conv}%</b>trial to paid</div>`;
+  const st = s => leads.filter(l => (l.status || 'new') === s).length, total = leads.length || 1;
+  $('salesPipe').innerHTML = leads.length ? LEAD_STATUS.filter(s => s !== 'lost').map(s => `<div style="display:flex;align-items:center;gap:8px;margin:4px 0;font-size:13px"><div style="width:110px">${LEAD_LABEL[s]}</div><div style="flex:1;background:#eceff1;border-radius:99px;height:14px;overflow:hidden"><div style="height:100%;width:${(st(s) / total * 100).toFixed(0)}%;background:var(--green)"></div></div><b style="width:40px;text-align:right">${st(s)}</b></div>`).join('') + `<div class="muted" style="margin-top:6px">${st('lost')} lost. Lead to won: ${leads.length ? Math.round(st('won') / leads.length * 100) : 0}%. If every lead on a demo or trial became paying: about ${money((st('demo') + st('trial')) * unit)} a month.</div>` : '<div class="muted">No leads yet. Add them in the Leads tab.</div>';
+  const list = (arr, label) => `<div style="margin:8px 0"><b>${label}</b> <span class="muted">(${arr.length})</span>${arr.map(s => `<div class="row" style="margin-top:4px;justify-content:space-between"><div class="grow">${esc(s.businessName)} <span class="muted">${fmtD(s.validUntil)}</span></div>${waBtn('shop', s.id, (statusOf(s) === 'active') ? 'renewal' : 'lapsed', 'WhatsApp')}</div>`).join('') || '<div class="muted">None.</div>'}</div>`;
+  $('salesMoney').innerHTML = `<div class="muted">Renewals due in 7 days: ${money(due7.reduce((a, s) => a + (s.extra ? (addon || unit) : unit), 0))}. In 30 days: ${money(due30.reduce((a, s) => a + (s.extra ? (addon || unit) : unit), 0))}. Plans that ended in the last 60 days could bring back ${money(lostMoney.length * unit)} a month.</div>` + list(due30, 'Renewals in the next 30 days') + list(trials.filter(s => (s.validUntil - now) <= 7 * DAY), 'Trials ending within 7 days') + list(lostMoney, 'Plans that ended in the last 60 days');
+  const by = (key, nameOf) => { const m = {}; leads.forEach(l => { const k = nameOf(l) || 'None'; m[k] = m[k] || { n: 0, won: 0 }; m[k].n++; if (l.status === 'won') m[k].won++; }); return m; };
+  const tbl = (m, h) => '<table><tr><th>' + h + '</th><th>Leads</th><th>Won</th><th>Rate</th></tr>' + Object.entries(m).sort((a, b) => b[1].n - a[1].n).map(([k, v]) => `<tr><td>${esc(k)}</td><td>${v.n}</td><td>${v.won}</td><td>${v.n ? Math.round(v.won / v.n * 100) : 0}%</td></tr>`).join('') + '</table>';
+  $('salesSources').innerHTML = leads.length ? tbl(by('s', l => l.source), 'Source') + '<div style="height:10px"></div>' + tbl(by('c', l => (campaigns.find(c => c.id === l.campaign) || {}).name), 'Campaign') : '<div class="muted">Appears once you have leads.</div>';
+}
+
+// ---------- PROMOTIONS ----------
+function codeState(c) { if (c.active === false) return 'off'; if (c.expiresAt && c.expiresAt + DAY < Date.now()) return 'expired'; if (c.maxUses && (c.uses || 0) >= c.maxUses) return 'used up'; return 'live'; }
+const codeText = c => c.type === 'percent' ? c.value + '% off' : c.type === 'flat' ? '₹' + c.value + ' off' : c.value + ' free days';
+function renderPromos() {
+  const sel = $('pcCamp'); if (document.activeElement !== sel) { const v = sel.value; sel.innerHTML = '<option value="">None</option>' + campaigns.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join(''); sel.value = v; }
+  $('pcTable').innerHTML = '<tr><th>Code</th><th>Offer</th><th>Until</th><th>Used</th><th>Campaign</th><th>State</th><th></th></tr>' + (Object.entries(codes).map(([k, c]) => `<tr><td><b>${esc(k)}</b></td><td>${esc(codeText(c))}</td><td>${c.expiresAt ? fmtD(c.expiresAt) : 'no end'}</td><td>${c.uses || 0}${c.maxUses ? ' of ' + c.maxUses : ''}</td><td>${esc((campaigns.find(x => x.id === c.campaign) || {}).name || '')}</td><td><span class="pill ${codeState(c) === 'live' ? 'p-life' : 'p-expired'}">${codeState(c)}</span></td><td><button class="act" data-act="code-toggle" data-id="${esc(k)}">${c.active === false ? 'Turn on' : 'Turn off'}</button> <button class="act danger" data-act="code-del" data-id="${esc(k)}">Delete</button></td></tr>`).join('') || '<tr><td colspan="7" class="muted">No codes yet.</td></tr>');
+  const pay = p => p.promo ? payments.filter(x => x.promo && codes[x.promo] && codes[x.promo].campaign === p.id) : [];
+  $('cmList').innerHTML = campaigns.sort((a, b) => (b.start || 0) - (a.start || 0)).map(c => {
+    const ls = leads.filter(l => l.campaign === c.id), won = ls.filter(l => l.status === 'won').length, pp = pay(c), amt = pp.reduce((a, p) => a + (Number(p.amount) || 0), 0), got = won + pp.length, pct = c.goal ? Math.min(100, Math.round(got / c.goal * 100)) : 0;
+    const live = (!c.start || c.start <= Date.now()) && (!c.end || c.end + DAY >= Date.now());
+    return `<div class="card" style="border:1px solid var(--line);box-shadow:none;margin-bottom:6px"><div class="row" style="margin-top:0;justify-content:space-between"><div class="grow"><b>${esc(c.name)}</b> <span class="pill ${live ? 'p-life' : 'p-free'}">${live ? 'running' : 'not running'}</span><div class="muted">${fmtD(c.start)} to ${fmtD(c.end)}${c.note ? ' · ' + esc(c.note) : ''}</div></div><button class="act danger" data-act="cm-del" data-id="${esc(c.id)}">Delete</button></div>
+      <div class="muted" style="margin-top:4px">${ls.length} leads · ${won} won · ${pp.length} payments with its codes (${money(amt)})${c.goal ? ' · goal ' + c.goal + ' new shops' : ''}</div>${c.goal ? `<div style="height:8px;background:#eceff1;border-radius:99px;overflow:hidden;margin-top:4px"><div style="height:100%;width:${pct}%;background:var(--green)"></div></div>` : ''}</div>`;
+  }).join('') || '<div class="muted">No campaigns yet.</div>';
+  ['rfNew', 'rfBy'].forEach(id => { const el = $(id); if (document.activeElement !== el) { const v = el.value; el.innerHTML = shopOptions('', 'Choose a shop'); el.value = v; } });
+  const g = $('gnSeg'); if (!g.options.length) g.innerHTML = SEGMENTS.map(([k, l]) => `<option value="${k}">${l}</option>`).join('');
+  $('rfTable').innerHTML = '<tr><th>Referred shop</th><th>Referred by</th><th>Reward</th><th>Status</th><th></th></tr>' + (Object.entries(referrals).map(([newId, r]) => {
+    const n = subs.find(x => x.id === newId), b = subs.find(x => x.id === r.referrerId), paid = payments.some(p => p.businessId === newId && Number(p.amount) > 0);
+    return `<tr><td>${esc(n ? n.businessName : newId)}</td><td>${esc(b ? b.businessName : r.referrerId)}</td><td>${r.days || 30} days</td><td>${r.rewardedAt ? 'Rewarded ' + fmtD(r.rewardedAt) : paid ? '<b style="color:var(--green)">Paid, reward due</b>' : 'Waiting for first payment'}</td><td>${!r.rewardedAt ? `<button class="act${paid ? ' primary' : ''}" data-act="rf-reward" data-id="${esc(newId)}">Give reward</button>` : ''} <button class="act danger" data-act="rf-del" data-id="${esc(newId)}">Remove</button></td></tr>`;
+  }).join('') || '<tr><td colspan="5" class="muted">No referrals recorded.</td></tr>');
+}
+$('pcSave').onclick = async () => {
+  const code = $('pcCode').value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, ''), v = Number($('pcValue').value);
+  if (!code || !(v > 0)) { $('pcMsg').textContent = 'Enter a code and a value above 0.'; return; }
+  if ($('pcType').value === 'percent' && v > 100) { $('pcMsg').textContent = 'Percent cannot be above 100.'; return; }
+  try { await db.ref('promoCodes/' + code).update({ type: $('pcType').value, value: v, expiresAt: dateMs($('pcExp').value), maxUses: Number($('pcMax').value) || 0, campaign: $('pcCamp').value, active: true, createdAt: (codes[code] || {}).createdAt || Date.now(), uses: (codes[code] || {}).uses || 0 }); $('pcMsg').textContent = 'Saved ' + code + '.'; $('pcCode').value = ''; $('pcValue').value = ''; } catch (e) { $('pcMsg').textContent = 'Failed: ' + e.message; }
+};
+$('cmSave').onclick = async () => {
+  const name = $('cmName').value.trim(); if (!name) { $('cmMsg').textContent = 'Enter a name.'; return; }
+  try { await db.ref('campaigns').push({ name, start: dateMs($('cmStart').value), end: dateMs($('cmEnd').value), goal: Number($('cmGoal').value) || 0, note: $('cmNote').value.trim(), createdAt: Date.now() }); $('cmMsg').textContent = 'Saved.'; ['cmName', 'cmStart', 'cmEnd', 'cmGoal', 'cmNote'].forEach(i => $(i).value = ''); } catch (e) { $('cmMsg').textContent = 'Failed: ' + e.message; }
+};
+$('rfSave').onclick = async () => {
+  const a = $('rfNew').value, b = $('rfBy').value;
+  if (!a || !b || a === b) { $('rfMsg').textContent = 'Choose two different shops.'; return; }
+  try { await db.ref('referrals/' + a).set({ referrerId: b, days: Number($('rfDays').value) || 30, createdAt: Date.now() }); $('rfMsg').textContent = 'Recorded.'; } catch (e) { $('rfMsg').textContent = 'Failed: ' + e.message; }
+};
+async function giveReferralReward(newId) {
+  const r = referrals[newId]; if (!r) return; const s = subs.find(x => x.id === r.referrerId); if (!s) { alert('Referrer shop not found.'); return; }
+  const days = r.days || 30, st = statusOf(s);
+  if (!confirm(`Give ${days} free days to ${s.businessName}?`)) return;
+  const fields = (st === 'active') ? { validUntil: Math.max(Date.now(), s.validUntil || 0) + days * DAY } : { plan: 'trial', validUntil: Date.now() + days * DAY };
+  try { await applyChange(s.id, fields, 'referral_reward', `${days} free days for referring ${(subs.find(x => x.id === newId) || {}).businessName || newId}`); await db.ref('referrals/' + newId).update({ rewardedAt: Date.now() }); } catch (e) { alert('Failed: ' + e.message); }
+}
+$('gnSend').onclick = async () => {
+  const seg = $('gnSeg').value, text = $('gnText').value.trim(), targets = subs.filter(s => inSeg(s, seg));
+  if (!text) { $('gnMsg').textContent = 'Write the notice first.'; return; }
+  if (!targets.length) { $('gnMsg').textContent = 'No shops in that group.'; return; }
+  if (!confirm(`Send this notice to ${targets.length} shop(s)?`)) return;
+  let n = 0; for (const s of targets) { try { await applyChange(s.id, { notice: text }, 'notice', text); n++; $('gnMsg').textContent = `Sent to ${n} of ${targets.length}…`; } catch (e) { alert(s.businessName + ': ' + e.message); } }
+  $('gnMsg').textContent = `Sent to ${n} shop(s).`;
+};
+$('gnClear').onclick = async () => {
+  const seg = $('gnSeg').value, targets = subs.filter(s => inSeg(s, seg) && s.notice);
+  if (!targets.length) { $('gnMsg').textContent = 'No shop in that group has a notice.'; return; }
+  if (!confirm(`Clear the notice for ${targets.length} shop(s)?`)) return;
+  for (const s of targets) await applyChange(s.id, { notice: '' }, 'notice', '(cleared)').catch(e => alert(e.message));
+  $('gnMsg').textContent = `Cleared for ${targets.length} shop(s).`;
+};
+
+// ---------- MARKETING (templates, signature, log) ----------
+function renderMarketing() {
+  const ids = [...new Set([...Object.keys(MSG_TPL), ...Object.keys(templates)])];
+  if (!$('tplList').contains(document.activeElement)) $('tplList').innerHTML = ids.map(id => { const t = getTpl(id), custom = !!templates[id]; return `<details class="card" style="border:1px solid var(--line);box-shadow:none;margin-bottom:6px"><summary style="cursor:pointer;font-weight:700">${esc(t.name)}${custom ? ' <span class="muted">(edited)</span>' : ''}</summary><input data-tpl-name="${esc(id)}" value="${esc(t.name)}" style="font-weight:700"><textarea data-tpl-text="${esc(id)}" rows="3">${esc(t.text)}</textarea><div class="row"><button class="act primary" data-act="tpl-save" data-id="${esc(id)}">Save</button>${MSG_TPL[id] ? (custom ? `<button class="act" data-act="tpl-reset" data-id="${esc(id)}">Reset to original</button>` : '<span class="muted">original wording</span>') : `<button class="act danger" data-act="tpl-del" data-id="${esc(id)}">Delete</button>`}</div></details>`; }).join('');
+  if (document.activeElement !== $('sigText')) $('sigText').value = sigText();
+  const o = outreach.slice(0, 100);
+  $('outTable').innerHTML = '<tr><th>When</th><th>To</th><th>Template</th></tr>' + (o.map(x => `<tr><td>${fmtDT(x.at)}</td><td>${esc(x.name || '')} <span class="muted">${x.kind === 'lead' ? 'lead' : 'shop'}</span></td><td>${esc(x.tpl || '')}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">Nothing sent from here yet.</td></tr>');
+}
+$('tplNew').onclick = async () => { const ref = db.ref('msgTemplates').push(); await ref.set({ name: 'New template', text: 'Hello {name}, ' }).catch(e => alert(e.message)); };
+$('sigSave').onclick = async () => { try { await db.ref('adminSettings/signature').set($('sigText').value); $('sigMsg').textContent = 'Saved.'; } catch (e) { $('sigMsg').textContent = 'Failed: ' + e.message; } };
+
+// ---------- one click handler for the new tabs ----------
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const a = b.dataset.act, id = b.dataset.id;
+  if (a === 'wa') { e.preventDefault(); sendWA(b.dataset.kind, id, b.dataset.tpl); }
+  else if (a === 'lead-edit') openLead(id);
+  else if (a === 'shop-open') { e.preventDefault(); openDetail(id); }
+  else if (a === 'code-toggle') db.ref('promoCodes/' + id).update({ active: codes[id].active === false }).catch(err => alert(err.message));
+  else if (a === 'code-del') { if (confirm('Delete code ' + id + '?')) db.ref('promoCodes/' + id).remove(); }
+  else if (a === 'cm-del') { if (confirm('Delete this campaign? Leads keep their other details.')) db.ref('campaigns/' + id).remove(); }
+  else if (a === 'rf-reward') giveReferralReward(id);
+  else if (a === 'rf-del') { if (confirm('Remove this referral?')) db.ref('referrals/' + id).remove(); }
+  else if (a === 'tpl-save') { const n = document.querySelector(`[data-tpl-name="${CSS.escape(id)}"]`).value.trim(), t = document.querySelector(`[data-tpl-text="${CSS.escape(id)}"]`).value; await db.ref('msgTemplates/' + id).set({ name: n || id, text: t }).catch(err => alert(err.message)); }
+  else if (a === 'tpl-reset') db.ref('msgTemplates/' + id).remove();
+  else if (a === 'tpl-del') { if (confirm('Delete this template?')) db.ref('msgTemplates/' + id).remove(); }
+});
 </script>
 </body>
 </html>
