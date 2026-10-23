@@ -183,6 +183,18 @@
       </div>
     </section>
 
+    <div class="card" id="pjCard">
+      <h3>Projection against the free Spark limits</h3>
+      <div class="muted">Free limits for Realtime Database (from Firebase pricing): 1 GB stored, 10 GB downloaded a month, 100 phones connected at once. This looks forward from today's estimate using how fast your shops add bills, so press <b>Measure now</b> first. It is a model with assumptions you can change, not a promise.</div>
+      <div class="grid" style="margin-top:8px">
+        <div><label>New shops joining per month</label><input id="pjNew" inputmode="decimal" placeholder="from your sign-ups"></div>
+        <div><label>Phones per shop</label><input id="pjDev" inputmode="decimal" value="2"></div>
+        <div><label>Times each phone opens the app per day</label><input id="pjOpens" inputmode="decimal" value="2"></div>
+        <div><label>Downloads shown in Firebase for the last 30 days, in GB (optional, makes the download forecast far more accurate)</label><input id="pjDl" inputmode="decimal" placeholder="e.g. 0.8"></div>
+      </div>
+      <div id="pjOut" style="margin-top:10px" class="muted">Waiting for a measurement.</div>
+    </div>
+
     <!-- PAYMENT DETAILS -->
     <section id="tab-payment" class="hidden">
       <div class="card">
@@ -784,6 +796,56 @@ async function loadGithub() {
   } catch (e) { box.innerHTML = `<div class="err">${esc(e.message)}</div>`; }
 }
 
+
+// ---------- projection ----------
+let lastMeasure = null;
+['pjNew', 'pjDev', 'pjOpens', 'pjDl'].forEach(id => $(id).addEventListener('input', () => renderProjection()));
+function monthsFrom(n) { const d = new Date(); d.setMonth(d.getMonth() + n); return d.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }); }
+function whenHit(series, limit) { const i = series.findIndex(v => v >= limit); return i < 0 ? 'not within 10 years' : (i === 0 ? 'already' : `in about ${i} month${i === 1 ? '' : 's'} (${monthsFrom(i)})`); }
+function renderProjection() {
+  const out = $('pjOut'), m = lastMeasure;
+  if (!m || !m.ids.length) { out.textContent = 'Press Measure now first.'; return; }
+  const shops = m.ids.length;
+  if (!$('pjNew').value) {
+    const since = Date.now() - 90 * DAY, joined = subs.filter(x => (x.createdAt || 0) >= since).length;
+    $('pjNew').value = Math.max(1, Math.round(joined / 3 * 10) / 10);
+  }
+  const nNew = Math.max(0, parseFloat($('pjNew').value) || 0), dev = Math.max(0, parseFloat($('pjDev').value) || 0), opens = Math.max(0, parseFloat($('pjOpens').value) || 0), consoleGB = parseFloat($('pjDl').value) || 0;
+  // storage
+  const GROW = [3, 4, 5, 6];
+  let growth = 0, statics = 0, prodCust = 0;
+  m.rows.forEach(r => {
+    const g = GROW.reduce((a, i) => a + r.per[i].bytes, 0);
+    const bills = r.per[4].count, b30 = (usage[r.id] && usage[r.id].bills30d) || 0;
+    const ratio = bills ? Math.min(1, b30 / bills) : 0;
+    growth += g * ratio; statics += r.bytes - g; prodCust += r.per[0].bytes + r.per[1].bytes;
+  });
+  const growPerShop = growth / shops, staticPerNew = statics / shops;
+  const st = [m.total];
+  for (let i = 1; i <= 120; i++) st.push(st[i - 1] + growPerShop * (shops + nNew * (i - 1)) + nNew * staticPerNew);
+  // downloads (per month): every phone open re-reads products and customers; calibrated by the Firebase figure if given
+  const perShopNow = dev * opens * 30 * (prodCust / shops);
+  const modelNow = perShopNow * shops, k = consoleGB > 0 && modelNow > 0 ? consoleGB * 1e9 / modelNow : 1;
+  const dl = [], cn = [];
+  for (let i = 0; i <= 120; i++) { const sh = shops + nNew * i; dl.push(k * perShopNow * sh); cn.push(sh * dev * 0.5); }
+  const pctTxt = v => (v / 1e9 * 100).toFixed(0) + '%';
+  const pt = [3, 6, 12, 24];
+  const colour = v => v < 0.7 ? 'var(--green)' : v < 0.9 ? 'var(--amber)' : 'var(--red)';
+  const row = (label, ser, limit, fmt) => `<tr><td>${label}</td><td>${fmt(ser[0])}</td>${pt.map(i => `<td style="color:${colour(ser[i] / limit)};font-weight:700">${fmt(ser[i])}</td>`).join('')}</tr>`;
+  out.innerHTML = `<div class="scroll" style="max-height:none"><table><tr><th></th><th>Now</th><th>3 months</th><th>6 months</th><th>1 year</th><th>2 years</th></tr>
+    ${row('Stored data (limit 1 GB)', st, FB_LIMIT, fmtB)}
+    ${row('Downloaded per month (limit 10 GB)', dl, 1e10, fmtB)}
+    ${row('Phones online at once (limit 100)', cn, 100, v => Math.round(v))}</table></div>
+    <div class="grid" style="margin-top:10px">
+      <div class="kv"><span>Stored data reaches 80%</span>${whenHit(st, FB_LIMIT * 0.8)}</div>
+      <div class="kv"><span>Stored data reaches 100%</span>${whenHit(st, FB_LIMIT)}</div>
+      <div class="kv"><span>Downloads reach 10 GB a month</span>${whenHit(dl, 1e10)}</div>
+      <div class="kv"><span>Phones online at once reach 100</span>${whenHit(cn, 100)}</div>
+      <div class="kv"><span>Each shop adds about</span>${fmtB(growPerShop)} a month of bills and stock history</div>
+      <div class="kv"><span>Each new shop starts at about</span>${fmtB(staticPerNew)} (products, photos, customers)</div></div>
+    <div class="muted" style="margin-top:8px">How it works: today's estimate (${fmtB(m.total)}) plus the monthly growth of bills, stock history, returns and expenses (each shop's last 30 days of bills compared with its total), plus ${nNew} new shop${nNew === 1 ? '' : 's'} a month at today's average starting size. Downloads assume every phone reloads its products and customers each time the app opens${consoleGB > 0 ? `, scaled so that today matches the ${consoleGB} GB you entered` : ' (enter the 30-day download figure from Firebase to replace this guess)'}. Phones online at once assume half of all phones are connected at peak. The first year is the useful part; anything beyond is a rough guide. If a limit is passed on the free plan, Firebase can stop serving the database until the limit resets or the plan is upgraded (the pricing page does not spell this out, so confirm on the Firebase usage page), so plan to act when a figure turns amber.</div>`;
+}
+
 $('fbMeasure').onclick = async () => {
   const btn = $('fbMeasure'), box = $('fbBox'); btn.disabled = true;
   const nodes = ['products', 'customers', 'purchaseInvoices', 'stockMovements', 'bills', 'returns', 'expenses'];
@@ -818,6 +880,7 @@ $('fbMeasure').onclick = async () => {
     const total = perTotal + shared;
     rows.sort((a, b) => b.bytes - a.bytes);
     const nodeTotals = nodes.map(n => ({ n, b: rows.reduce((a, r) => a + r.per.find(p => p.node === n).bytes, 0) })).sort((a, b) => b.b - a.b);
+    lastMeasure = { rows, total, ids }; renderProjection();
     box.innerHTML = meter(total, FB_LIMIT, 'Estimated stored data (free limit)') +
       `<div class="stats" style="margin-top:12px">
         <div class="stat"><b>${ids.length}</b>businesses</div>
