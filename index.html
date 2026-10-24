@@ -142,9 +142,18 @@
     <section id="tab-usage" class="hidden">
       <div class="pagehead"><h2>Usage</h2><p>How shops use the app, and which ones need help.</p></div>
       <div class="stats" id="usageStats"></div>
-      <div class="subtabs"><button data-sub="ov" class="on">Overview</button><button data-sub="shops">Shop health</button></div>
+      <div class="subtabs"><button data-sub="ov" class="on">Overview</button><button data-sub="shops">Shop health</button><button data-sub="act">Activity log</button></div>
       <div class="card" data-sub-panel="ov"><h3>Adoption funnel</h3><div class="muted">How far each shop gets. The drop between steps shows where people get stuck.</div><div id="usageFunnel" style="margin-top:8px"></div></div>
       <div class="card" data-sub-panel="ov"><h3>Trend (one snapshot a day, saved when you open this page)</h3><div id="usageTrend" class="muted">No history yet. A snapshot is saved the first time you open the page each day.</div></div>
+      <div class="card" data-sub-panel="act">
+        <h3>Activity log</h3>
+        <div class="muted">Each row is a moment a shop's app reported activity (a login, a bill, a screen opened). It is recorded when this admin page sees the change, so it is complete while the page is open and shows only the latest activity for the time it was closed. It does <b>not</b> show how long someone stayed in the app: that needs an app update.</div>
+        <div class="row"><select id="actRange" style="max-width:170px"><option value="1">Today</option><option value="7" selected>Last 7 days</option><option value="30">Last 30 days</option><option value="0">Everything</option></select><select id="actShop" style="max-width:240px"></select><button class="act" id="actExport">Export CSV</button></div>
+        <div class="stats" id="actStats" style="margin-top:10px"></div>
+        <h3 style="margin-top:6px">When the app is used (hour of day)</h3><div id="actHours"></div>
+        <h3 style="margin-top:14px">Day by day</h3><div class="scroll" style="max-height:260px"><table id="actDays"></table></div>
+        <h3 style="margin-top:14px">Every entry (latest 200)</h3><div class="scroll" style="max-height:340px"><table id="actTable"></table></div>
+      </div>
       <div class="card" data-sub-panel="shops">
         <h3>Shop health</h3>
         <div class="row" style="margin-top:0"><select id="usageFilter" style="max-width:240px"><option value="">All health states</option><option value="active">Active (billed in last 7 days)</option><option value="slowing">Slowing (7 to 14 days)</option><option value="dormant">Dormant (over 14 days)</option><option value="stalled">Stalled (products, no bills)</option><option value="notstarted">Not started (no products)</option><option value="unknown">No data yet</option></select><button class="act" id="usageExport">Export CSV</button></div>
@@ -157,7 +166,7 @@
     <section id="tab-leads" class="hidden">
       <div class="pagehead"><h2>Leads</h2><p>People and shops that could become customers.</p></div>
       <div class="stats" id="leadStats"></div>
-      <div class="subtabs"><button data-sub="list" class="on">Lead list</button><button data-sub="finder">Lead finder</button></div>
+      <div class="subtabs"><button data-sub="list" class="on">Lead list</button><button data-sub="finder">Lead finder</button><button data-sub="ai">AI research</button></div>
       <div class="card" data-sub-panel="list">
         <div class="row" style="margin-top:0">
           <div class="grow" style="flex:2"><input id="leadSearch" placeholder="Search leads by name, business, phone or town"></div>
@@ -167,6 +176,19 @@
           <button class="act" id="leadExport">Export CSV</button>
         </div>
         <div class="scroll" style="margin-top:8px;max-height:520px"><table id="leadTable"></table></div>
+      </div>
+      <div class="card" data-sub-panel="ai">
+        <h3>AI research (free web search by Google Gemini)</h3>
+        <div class="muted">The AI searches the web for shops and returns a table with a source link for each one. Results are only as good as the web pages; phone numbers can be missing or wrong, so check a row before you contact it. On the free plan there is no cost, but Google limits how many runs you get a day. Only the place and the kind of shop are sent, never your customers' data.</div>
+        <details id="aiSetup" style="margin-top:8px"><summary style="cursor:pointer;font-weight:700">Connection settings</summary>
+          <div class="grid" style="margin-top:6px"><div><label>Relay address (from Cloudflare)</label><input id="aiUrl" placeholder="https://owi-relay.yourname.workers.dev"></div>
+          <div><label>Passphrase (kept in this browser only)</label><input id="aiPass" type="password" autocomplete="off"></div>
+          <div><label>Cost per run in US$ (leave 0 on the free plan)</label><input id="aiCost" inputmode="decimal" value="0"></div></div>
+          <div class="row"><button class="act" id="aiSave">Save</button><button class="act" id="aiTest">Test connection</button><span id="aiConn" class="muted"></span></div></details>
+        <div class="grid" style="margin-top:8px"><div><label>Place</label><input id="aiPlace" value="Tuensang, Nagaland"></div><div><label>What to look for</label><input id="aiKind" value="grocery and general stores"></div><div><label>How many</label><select id="aiCount"><option>10</option><option>15</option><option>20</option></select></div></div>
+        <div class="row"><button class="act primary" id="aiGo">Research with AI</button><span id="aiMsg" class="muted"></span></div>
+        <div id="aiOut" style="margin-top:8px"></div>
+        <div id="aiMonth" class="muted" style="margin-top:8px"></div>
       </div>
       <div class="card" data-sub-panel="finder">
         <h3>Lead finder (OpenStreetMap)</h3>
@@ -472,6 +494,8 @@ auth.onAuthStateChanged(async user => {
   listen('payments', v => { payments = Object.entries(v || {}).map(([id, p]) => ({ id, ...p })); renderRevenue(); if (openId) renderDetail(); });
   listen('auditLog', v => { audit = Object.entries(v || {}).map(([id, a]) => ({ id, ...a })); renderRevenue(); if (openId) renderDetail(); });
   startGrowthListeners();
+  startActivityListener();
+  startAiListeners();
   loadBusinesses();
 });
 
@@ -493,7 +517,7 @@ function showTab(t) {
   ['today', 'customers', 'usage', 'leads', 'sales', 'promos', 'broadcast', 'support', 'revenue', 'payment', 'appcfg', 'storage'].forEach(n => $('tab-' + n).classList.toggle('hidden', n !== t));
   if (t === 'storage') loadGithub();
 }
-function renderAll() { renderCustomers(); renderTickets(); renderRevenue(); renderReminders(); if (typeof renderGrowth === 'function') renderGrowth(); maybeSnapshot(); }
+function renderAll() { renderCustomers(); renderTickets(); renderRevenue(); renderReminders(); if (typeof renderGrowth === 'function') renderGrowth(); maybeSnapshot(); if (typeof logActivity === 'function') logActivity(); }
 
 // ---------- helpers on a customer ----------
 function statusOf(s) {
@@ -1159,7 +1183,7 @@ function startGrowthListeners() {
   listenNew('adminSettings', v => { settings = v || {}; renderGrowth(); });
 }
 function renderGrowth() {
-  [renderToday, renderUsage, renderLeads, renderSales, renderPromos, renderMarketing].forEach(f => notBlocked(f));
+  [renderToday, renderUsage, renderLeads, renderSales, renderPromos, renderMarketing, renderActivity, renderAi].forEach(f => notBlocked(f));
 }
 
 // ---------- shop health ----------
@@ -1508,6 +1532,94 @@ document.querySelectorAll('section[id^="tab-"]').forEach(sec => { const first = 
 function closeMenu() { $('side').classList.remove('open'); $('scrim').classList.remove('show'); }
 $('menuBtn').onclick = () => { $('side').classList.toggle('open'); $('scrim').classList.toggle('show'); };
 $('scrim').onclick = closeMenu;
+
+// ---------- ACTIVITY LOG (interim, recorded by the admin page) ----------
+let actLog = [], actLoaded = false; const actPending = {};
+function startActivityListener() {
+  listenNew('activityLog', v => { actLog = Object.entries(v || {}).map(([id, a]) => ({ id, ...a })).sort((a, b) => (b.at || 0) - (a.at || 0)); actLoaded = true; renderActivity(); logActivity(); pruneActivity(); });
+}
+async function logActivity() {
+  if (!actLoaded || !subs.length) return;
+  const last = {}; actLog.forEach(a => { if (!last[a.shopId] || a.at > last[a.shopId]) last[a.shopId] = a.at; });
+  const up = {}, now = Date.now();
+  subs.forEach(s => { const u = usage[s.id]; if (u && u.lastActiveAt && u.lastActiveAt > (last[s.id] || 0) && !actPending[s.id + ':' + u.lastActiveAt]) { actPending[s.id + ':' + u.lastActiveAt] = 1; up['activityLog/' + db.ref('activityLog').push().key] = { shopId: s.id, shopName: s.businessName || '', user: u.lastUserName || '', role: u.lastUserRole || '', at: u.lastActiveAt, seenAt: now }; } });
+  if (Object.keys(up).length) await db.ref().update(up).catch(e => console.warn(e));
+}
+async function pruneActivity() {
+  if (actLog.length <= 3000) return;
+  const up = {}; actLog.slice(-500).forEach(a => up['activityLog/' + a.id] = null);
+  await db.ref().update(up).catch(() => {});
+}
+const hh = ms => new Date(ms).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+function renderActivity() {
+  const shopSel = $('actShop'); if (document.activeElement !== shopSel) { const v = shopSel.value; shopSel.innerHTML = '<option value="">All shops</option>' + subs.map(s => `<option value="${esc(s.id)}">${esc(s.businessName || s.id)}</option>`).join(''); shopSel.value = v; }
+  const days = Number($('actRange').value), since = days ? Date.now() - (days === 1 ? 0 : days * DAY) : 0, midnight = new Date(); midnight.setHours(0, 0, 0, 0);
+  const from = days === 1 ? midnight.getTime() : since, sid = shopSel.value;
+  const list = actLog.filter(a => (a.at || 0) >= from && (!sid || a.shopId === sid));
+  const hours = new Array(24).fill(0); list.forEach(a => hours[new Date(a.at).getHours()]++);
+  const mx = Math.max(1, ...hours), peak = hours.indexOf(Math.max(...hours));
+  $('actStats').innerHTML = `<div class="stat"><b>${list.length}</b>entries</div><div class="stat"><b>${new Set(list.map(a => a.shopId)).size}</b>shops seen</div><div class="stat"><b>${list.length ? String(peak).padStart(2, '0') + ':00' : '-'}</b>busiest hour</div><div class="stat"><b>${actLog.length}</b>entries kept in total</div>`;
+  $('actHours').innerHTML = `<div style="display:flex;align-items:flex-end;gap:3px;height:70px">${hours.map((v, h) => `<div title="${String(h).padStart(2, '0')}:00 · ${v} entries" style="flex:1;background:${v === Math.max(...hours) && v ? 'var(--green)' : '#9ccc9f'};height:${Math.max(2, v / mx * 70)}px;border-radius:3px 3px 0 0"></div>`).join('')}</div><div style="display:flex;gap:3px;font-size:10px;color:var(--mute)">${hours.map((_, h) => `<div style="flex:1;text-align:center">${h % 3 === 0 ? h : ''}</div>`).join('')}</div>`;
+  const byDay = {}; list.forEach(a => { const k = dayKey(a.at); const d = byDay[k] = byDay[k] || { shops: new Set(), n: 0, lo: a.at, hi: a.at }; d.shops.add(a.shopId); d.n++; d.lo = Math.min(d.lo, a.at); d.hi = Math.max(d.hi, a.at); });
+  $('actDays').innerHTML = '<tr><th>Date</th><th>Shops active</th><th>First activity</th><th>Last activity</th><th>Entries</th></tr>' + (Object.entries(byDay).sort((a, b) => b[0].localeCompare(a[0])).map(([k, d]) => `<tr><td>${k}</td><td>${d.shops.size}</td><td>${hh(d.lo)}</td><td>${hh(d.hi)}</td><td>${d.n}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">No activity recorded in this period yet.</td></tr>');
+  $('actTable').innerHTML = '<tr><th>When (app reported)</th><th>Shop</th><th>User</th><th>Seen by admin</th></tr>' + (list.slice(0, 200).map(a => `<tr><td>${fmtDT(a.at)}</td><td>${esc(a.shopName || a.shopId)}</td><td>${esc(a.user || '')}${a.role ? ' <span class="muted">' + esc(a.role) + '</span>' : ''}</td><td class="muted">${fmtDT(a.seenAt)}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">Nothing yet. Entries appear as shops use the app while you have this page open.</td></tr>');
+}
+['actRange', 'actShop'].forEach(id => $(id).addEventListener('change', () => renderActivity()));
+$('actExport').onclick = () => download('owi-activity-' + dayKey() + '.csv', toCsv([['App reported', 'Shop', 'User', 'Role', 'Seen by admin']].concat(actLog.map(a => [fmtDT(a.at), a.shopName, a.user, a.role, fmtDT(a.seenAt)]))));
+
+// ---------- AI RESEARCH (through your Cloudflare relay) ----------
+let aiRuns = [], aiResults = [];
+const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch (_) { return ''; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (_) {} };
+function startAiListeners() { listenNew('aiRuns', v => { aiRuns = Object.entries(v || {}).map(([id, r]) => ({ id, ...r })); renderAi(); }); }
+function renderAi() {
+  if (document.activeElement !== $('aiUrl')) $('aiUrl').value = settings.relayUrl || '';
+  if (document.activeElement !== $('aiPass') && !$('aiPass').value) $('aiPass').value = lsGet('owiAiPass');
+  if (document.activeElement !== $('aiCost') && settings.aiCostPerRun != null) $('aiCost').value = settings.aiCostPerRun;
+  const d = new Date(); d.setDate(1); d.setHours(0, 0, 0, 0);
+  const m = aiRuns.filter(r => r.at >= d.getTime()), cost = Number($('aiCost').value) || 0, spend = m.length * cost;
+  $('aiMonth').innerHTML = `This month: <b>${m.length}</b> run${m.length === 1 ? '' : 's'}, ${m.reduce((a, r) => a + (r.searches || 0), 0)} web searches, ${m.reduce((a, r) => a + (r.inTok || 0) + (r.outTok || 0), 0).toLocaleString('en-IN')} tokens. ` + (cost > 0 ? `Estimated spend about <b>$${spend.toFixed(2)}</b> (a guess from your cost-per-run figure; the exact amount is in your provider's console).` : 'Free plan: no charge expected. If the free daily limit is used up the page says so; try again tomorrow.');
+}
+$('aiSave').onclick = async () => {
+  const url = $('aiUrl').value.trim().replace(/\/+$/, '');
+  if (url && !/^https:\/\/[\w.-]+\.workers\.dev$|^https:\/\/[\w.-]+$/.test(url)) { $('aiConn').textContent = 'The address should start with https://'; return; }
+  lsSet('owiAiPass', $('aiPass').value);
+  try { await db.ref('adminSettings').update({ relayUrl: url, aiCostPerRun: Number($('aiCost').value) || 0 }); $('aiConn').textContent = 'Saved.'; } catch (e) { $('aiConn').textContent = 'Failed: ' + e.message; }
+};
+async function callRelay(payload) {
+  const url = ($('aiUrl').value.trim() || settings.relayUrl || '').replace(/\/+$/, '');
+  if (!url) throw new Error('Open Connection settings and enter the relay address first.');
+  const pass = $('aiPass').value || lsGet('owiAiPass'); if (!pass) throw new Error('Enter the passphrase in Connection settings.');
+  const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ passphrase: pass, ...payload }) });
+  const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || ('Relay answered ' + r.status)); return j;
+}
+$('aiTest').onclick = async () => { $('aiConn').textContent = 'Testing…'; try { const j = await callRelay({ ping: true }); $('aiConn').textContent = j.keySet ? 'Connected. ' + (j.provider === 'anthropic' ? 'Claude' : 'Gemini') + ', model ' + j.model + '.' : 'Connected, but the AI key is not set in the relay yet.'; } catch (e) { $('aiConn').textContent = e.message; } };
+$('aiGo').onclick = async () => {
+  const msg = $('aiMsg'), out = $('aiOut'); $('aiGo').disabled = true; out.innerHTML = ''; msg.textContent = 'Claude is searching the web. This can take up to a minute…';
+  try {
+    const place = $('aiPlace').value.trim(), kind = $('aiKind').value.trim();
+    const j = await callRelay({ place, kind, count: Number($('aiCount').value) });
+    const known = new Set(leads.map(l => digits(l.phone).slice(-10)).filter(x => x.length >= 8)), names = new Set([...leads.map(l => (l.business || '').toLowerCase()), ...subs.map(s => (s.businessName || '').toLowerCase())]);
+    aiResults = (j.results || []).map(r => ({ ...r, dup: (digits(r.phone).length >= 8 && known.has(digits(r.phone).slice(-10))) || names.has(r.business.toLowerCase()) }));
+    msg.textContent = `${aiResults.length} shop${aiResults.length === 1 ? '' : 's'} found · ${(j.usage || {}).searches || 0} searches.`;
+    await db.ref('aiRuns').push({ at: Date.now(), place, kind, found: aiResults.length, searches: (j.usage || {}).searches || 0, inTok: (j.usage || {}).inTok || 0, outTok: (j.usage || {}).outTok || 0 }).catch(() => {});
+    renderAiResults(place);
+  } catch (e) { msg.textContent = ''; out.innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+  $('aiGo').disabled = false;
+};
+function safeUrl(u) { return /^https?:\/\//i.test(u || '') ? u : ''; }
+function renderAiResults(place) {
+  const out = $('aiOut');
+  if (!aiResults.length) { out.innerHTML = '<div class="muted">Nothing found. Try a different place or wording, for example "kirana shops" or "mobile shops".</div>'; return; }
+  out.innerHTML = `<div class="scroll" style="max-height:420px"><table><tr><th></th><th>Shop</th><th>Phone</th><th>Address</th><th>Source</th></tr>${aiResults.map((x, i) => `<tr><td><input type="checkbox" data-ai="${i}"${x.dup ? ' disabled' : ' checked'}></td><td><b>${esc(x.business)}</b>${x.note ? '<div class="muted">' + esc(x.note) + '</div>' : ''}${x.dup ? '<div class="muted">already in your leads or customers</div>' : ''}</td><td>${esc(x.phone || '-')}</td><td>${esc(x.address || '-')}</td><td>${safeUrl(x.source_url) ? `<a target="_blank" rel="noopener noreferrer" href="${esc(safeUrl(x.source_url))}">open page</a>` : '-'}</td></tr>`).join('')}</table></div>
+    <div class="row"><button class="act primary" id="aiAdd">Add ticked shops as leads</button><span class="muted">Check each one before you contact it.</span></div>`;
+  $('aiAdd').onclick = async () => {
+    const now = Date.now(), up = {}; let n = 0, town = place.split(',')[0].trim();
+    out.querySelectorAll('[data-ai]:checked').forEach(cb => { const x = aiResults[+cb.dataset.ai]; up['leads/' + db.ref('leads').push().key] = { business: x.business, phone: x.phone, town, source: 'Web research', notes: ['AI research', x.note, x.address, x.website, safeUrl(x.source_url)].filter(Boolean).join(' · '), status: 'new', createdAt: now, updatedAt: now }; n++; });
+    if (!n) { $('aiMsg').textContent = 'Tick at least one shop.'; return; }
+    try { await db.ref().update(up); $('aiMsg').textContent = `Added ${n} lead${n === 1 ? '' : 's'}.`; } catch (e) { $('aiMsg').textContent = 'Failed: ' + e.message; }
+  };
+}
 </script>
 </body>
 </html>
