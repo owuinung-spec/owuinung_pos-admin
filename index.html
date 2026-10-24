@@ -178,7 +178,7 @@
         <div class="scroll" style="margin-top:8px;max-height:520px"><table id="leadTable"></table></div>
       </div>
       <div class="card" data-sub-panel="ai">
-        <h3>AI research (free web search by Google Gemini)</h3>
+        <h3>AI research (Firecrawl search + Google Gemini, free plans)</h3>
         <div class="muted">The AI searches the web for shops and returns a table with a source link for each one. Results are only as good as the web pages; phone numbers can be missing or wrong, so check a row before you contact it. On the free plan there is no cost, but Google limits how many runs you get a day. Only the place and the kind of shop are sent, never your customers' data.</div>
         <details id="aiSetup" style="margin-top:8px"><summary style="cursor:pointer;font-weight:700">Connection settings</summary>
           <div class="grid" style="margin-top:6px"><div><label>Relay address (from Cloudflare)</label><input id="aiUrl" placeholder="https://owi-relay.yourname.workers.dev"></div>
@@ -1593,7 +1593,7 @@ async function callRelay(payload) {
   const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ passphrase: pass, ...payload }) });
   const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || ('Relay answered ' + r.status)); return j;
 }
-$('aiTest').onclick = async () => { $('aiConn').textContent = 'Testing…'; try { const j = await callRelay({ ping: true }); $('aiConn').textContent = j.keySet ? 'Connected. ' + (j.provider === 'anthropic' ? 'Claude' : 'Gemini') + ', model ' + j.model + '.' : 'Connected, but the AI key is not set in the relay yet.'; } catch (e) { $('aiConn').textContent = e.message; } };
+$('aiTest').onclick = async () => { $('aiConn').textContent = 'Testing…'; try { const j = await callRelay({ ping: true }); $('aiConn').textContent = !j.keySet ? 'Connected, but the Gemini key is not set in the relay yet.' : (j.searchKeySet === false ? 'Connected, but the search key (SEARCH_KEY) is not set in the relay yet.' : 'Connected. Search: Firecrawl. Reader: Gemini, model ' + j.model + '.'); } catch (e) { $('aiConn').textContent = e.message; } };
 $('aiGo').onclick = async () => {
   const msg = $('aiMsg'), out = $('aiOut'); $('aiGo').disabled = true; out.innerHTML = ''; msg.textContent = 'Claude is searching the web. This can take up to a minute…';
   try {
