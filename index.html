@@ -14,9 +14,6 @@
   header button { background:rgba(255,255,255,.18); color:#fff; border:0; padding:6px 10px; border-radius:8px; cursor:pointer; }
   main { max-width:1000px; margin:0 auto; padding:14px; }
   .card { background:var(--card); border-radius:12px; padding:14px; margin-bottom:10px; box-shadow:0 1px 2px rgba(0,0,0,.06); }
-  .tabs { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
-  .tabs button { flex:1; min-width:100px; padding:10px; border:1px solid var(--line); background:#fff; border-radius:10px; cursor:pointer; font-weight:600; }
-  .tabs button.on { background:var(--green); color:#fff; border-color:var(--green); }
   input, select, textarea { width:100%; padding:10px; border:1px solid var(--line); border-radius:8px; font:inherit; margin-top:4px; background:#fff; color:var(--text); }
   input[type=checkbox] { width:auto; margin:0 8px 0 0; }
   label { display:block; font-size:12px; color:var(--mute); margin-top:10px; }
@@ -39,6 +36,38 @@
   .reply { background:#e8f5e9; }
   #login { max-width:360px; margin:60px auto; }
   .err { color:var(--red); font-size:13px; margin-top:8px; }
+
+  /* ---- layout: side menu + content ---- */
+  main { max-width:1280px; }
+  .shell { display:grid; grid-template-columns:230px minmax(0,1fr); gap:22px; align-items:start; }
+  .side { position:sticky; top:64px; background:#fff; border-radius:14px; padding:10px; box-shadow:0 1px 2px rgba(0,0,0,.06); max-height:calc(100vh - 80px); overflow:auto; }
+  .side .grp { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--mute); font-weight:700; padding:12px 10px 4px; }
+  .side .grp:first-child { padding-top:4px; }
+  .side button { display:flex; width:100%; align-items:center; justify-content:space-between; text-align:left; padding:9px 10px; margin:1px 0; border:0; background:transparent; border-radius:9px; cursor:pointer; font:inherit; font-size:14px; font-weight:600; color:var(--text); }
+  .side button:hover { background:#f1f4f1; }
+  .side button.on { background:var(--green); color:#fff; }
+  .badge { font-size:11px; font-weight:700; background:#fff3e0; color:var(--amber); border-radius:99px; padding:1px 8px; min-width:20px; text-align:center; }
+  .badge:empty { display:none; }
+  .side button.on .badge { background:rgba(255,255,255,.25); color:#fff; }
+  .content { min-width:0; }
+  .pagehead { margin:2px 0 14px; }
+  .pagehead h2 { margin:0; font-size:22px; }
+  .pagehead p { margin:3px 0 0; color:var(--mute); font-size:13px; }
+  .subtabs { display:flex; gap:4px; border-bottom:2px solid var(--line); margin:0 0 14px; overflow-x:auto; }
+  .subtabs button { border:0; background:transparent; padding:9px 14px; font:inherit; font-size:14px; font-weight:600; color:var(--mute); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; white-space:nowrap; }
+  .subtabs button:hover { color:var(--text); }
+  .subtabs button.on { color:var(--green); border-bottom-color:var(--green); }
+  #menuBtn { display:none; }
+  .scrim { display:none; }
+  .stat { border:1px solid var(--line); }
+  .card h3 { font-size:15px; margin-bottom:8px; }
+  @media (max-width:900px) {
+    .shell { grid-template-columns:1fr; }
+    #menuBtn { display:inline-block; }
+    .side { position:fixed; left:0; top:0; bottom:0; width:260px; max-height:none; border-radius:0 14px 14px 0; z-index:30; transform:translateX(-105%); transition:transform .2s; padding-top:60px; }
+    .side.open { transform:none; box-shadow:0 10px 40px rgba(0,0,0,.35); }
+    .scrim.show { display:block; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:20; }
+  }
   .hidden { display:none !important; }
   img.qr { width:160px; height:160px; object-fit:contain; background:#fff; border:1px solid var(--line); }
   a { color:var(--blue); }
@@ -62,6 +91,7 @@
 <body>
 <header>
   <h1>Owuinüng POS — Admin</h1>
+  <div style="display:flex;align-items:center;gap:8px"><button id="menuBtn" class="hidden">Menu</button></div>
   <div><span id="who" class="muted" style="color:#fff;opacity:.85"></span> <button id="refresh" class="hidden">Reload</button> <button id="logout" class="hidden">Log out</button></div>
 </header>
 
@@ -77,33 +107,45 @@
   <div id="rulesBanner" class="card hidden" style="border-left:4px solid var(--red)"><b>New rules needed.</b> The new tabs save to parts of Firebase that your current rules do not allow yet. Paste the updated rules file into Firebase Console, Realtime Database, Rules, then press Publish, and reload this page. The old tabs keep working meanwhile.</div>
 
   <div id="app" class="hidden">
-    <div class="tabs">
-      <button data-tab="today" class="on">Today</button>
+    <div class="shell">
+    <aside class="side" id="side">
+      <div class="grp">Overview</div>
+      <button data-tab="today" class="on">Today <span class="badge" id="navToday"></span></button>
+      <div class="grp">Shops</div>
       <button data-tab="customers">Customers</button>
       <button data-tab="usage">Usage</button>
+      <button data-tab="support">Support <span class="badge" id="openBadge"></span></button>
+      <div class="grp">Growth</div>
       <button data-tab="leads">Leads</button>
       <button data-tab="sales">Sales</button>
       <button data-tab="promos">Promotions</button>
       <button data-tab="broadcast">Marketing</button>
-      <button data-tab="support">Support <span id="openBadge"></span></button>
+      <div class="grp">Money</div>
       <button data-tab="revenue">Payments</button>
       <button data-tab="payment">Payment details</button>
+      <div class="grp">System</div>
+      <button data-tab="appcfg">App settings</button>
       <button data-tab="storage">Storage</button>
-    </div>
+    </aside>
+    <div class="scrim" id="scrim"></div>
+    <div class="content">
 
     <!-- CUSTOMERS -->
     <!-- TODAY -->
     <section id="tab-today">
+      <div class="pagehead"><h2>Today</h2><p>Who to contact and what needs you, in one list. It updates by itself.</p></div>
       <div class="stats" id="todayStats"></div>
       <div id="todayBox"></div>
     </section>
 
     <!-- USAGE -->
     <section id="tab-usage" class="hidden">
+      <div class="pagehead"><h2>Usage</h2><p>How shops use the app, and which ones need help.</p></div>
       <div class="stats" id="usageStats"></div>
-      <div class="card"><h3>Adoption funnel</h3><div class="muted">How far each shop gets. The drop between steps shows where people get stuck.</div><div id="usageFunnel" style="margin-top:8px"></div></div>
-      <div class="card"><h3>Trend (one snapshot a day, saved when you open this page)</h3><div id="usageTrend" class="muted">No history yet. A snapshot is saved the first time you open the page each day.</div></div>
-      <div class="card">
+      <div class="subtabs"><button data-sub="ov" class="on">Overview</button><button data-sub="shops">Shop health</button></div>
+      <div class="card" data-sub-panel="ov"><h3>Adoption funnel</h3><div class="muted">How far each shop gets. The drop between steps shows where people get stuck.</div><div id="usageFunnel" style="margin-top:8px"></div></div>
+      <div class="card" data-sub-panel="ov"><h3>Trend (one snapshot a day, saved when you open this page)</h3><div id="usageTrend" class="muted">No history yet. A snapshot is saved the first time you open the page each day.</div></div>
+      <div class="card" data-sub-panel="shops">
         <h3>Shop health</h3>
         <div class="row" style="margin-top:0"><select id="usageFilter" style="max-width:240px"><option value="">All health states</option><option value="active">Active (billed in last 7 days)</option><option value="slowing">Slowing (7 to 14 days)</option><option value="dormant">Dormant (over 14 days)</option><option value="stalled">Stalled (products, no bills)</option><option value="notstarted">Not started (no products)</option><option value="unknown">No data yet</option></select><button class="act" id="usageExport">Export CSV</button></div>
         <div class="scroll" style="margin-top:8px;max-height:480px"><table id="usageTable"></table></div>
@@ -113,8 +155,10 @@
 
     <!-- LEADS -->
     <section id="tab-leads" class="hidden">
+      <div class="pagehead"><h2>Leads</h2><p>People and shops that could become customers.</p></div>
       <div class="stats" id="leadStats"></div>
-      <div class="card">
+      <div class="subtabs"><button data-sub="list" class="on">Lead list</button><button data-sub="finder">Lead finder</button></div>
+      <div class="card" data-sub-panel="list">
         <div class="row" style="margin-top:0">
           <div class="grow" style="flex:2"><input id="leadSearch" placeholder="Search leads by name, business, phone or town"></div>
           <select id="leadFilter" style="max-width:170px"></select>
@@ -124,7 +168,7 @@
         </div>
         <div class="scroll" style="margin-top:8px;max-height:520px"><table id="leadTable"></table></div>
       </div>
-      <div class="card">
+      <div class="card" data-sub-panel="finder">
         <h3>Lead finder (OpenStreetMap)</h3>
         <div class="muted">Searches the free public map for shops near a place. Coverage in smaller towns can be thin, and phone numbers are often missing, so use the Google links to check a shop before adding it. Nothing is sent anywhere; it only reads the map.</div>
         <div class="grid" style="margin-top:6px">
@@ -139,15 +183,19 @@
 
     <!-- SALES -->
     <section id="tab-sales" class="hidden">
+      <div class="pagehead"><h2>Sales</h2><p>Money coming in, renewals at risk and what converts.</p></div>
       <div class="stats" id="salesStats"></div>
-      <div class="card"><h3>Lead pipeline</h3><div id="salesPipe"></div></div>
-      <div class="card"><h3>Money coming and at risk</h3><div id="salesMoney"></div></div>
-      <div class="card"><h3>What brings customers in</h3><div id="salesSources"></div></div>
+      <div class="subtabs"><button data-sub="pipe" class="on">Pipeline</button><button data-sub="money">Renewals and risk</button><button data-sub="src">Sources</button></div>
+      <div class="card" data-sub-panel="pipe"><h3>Lead pipeline</h3><div id="salesPipe"></div></div>
+      <div class="card" data-sub-panel="money"><h3>Money coming and at risk</h3><div id="salesMoney"></div></div>
+      <div class="card" data-sub-panel="src"><h3>What brings customers in</h3><div id="salesSources"></div></div>
     </section>
 
     <!-- PROMOTIONS -->
     <section id="tab-promos" class="hidden">
-      <div class="card">
+      <div class="pagehead"><h2>Promotions</h2><p>Offers, campaigns, referral rewards and notices to groups of shops.</p></div>
+      <div class="subtabs"><button data-sub="codes" class="on">Offer codes</button><button data-sub="camps">Campaigns</button><button data-sub="refs">Referrals</button><button data-sub="notice">Group notice</button></div>
+      <div class="card" data-sub-panel="codes">
         <h3>Offer codes</h3>
         <div class="muted">Give a code to a lead. When you record their payment (Customers, then Extend), type the code and it adjusts the amount or adds free days.</div>
         <div class="grid" style="margin-top:6px">
@@ -161,7 +209,7 @@
         <div class="row"><button class="act primary" id="pcSave">Save code</button><span id="pcMsg" class="muted"></span></div>
         <div class="scroll" style="margin-top:8px;max-height:300px"><table id="pcTable"></table></div>
       </div>
-      <div class="card">
+      <div class="card" data-sub-panel="camps">
         <h3>Campaigns</h3>
         <div class="muted">A campaign groups a promotion with dates and a goal, so you can see what it brought in. Tag leads with a campaign in the lead form; codes can be tied to one here.</div>
         <div class="grid" style="margin-top:6px">
@@ -174,7 +222,7 @@
         <div class="row"><button class="act primary" id="cmSave">Save campaign</button><span id="cmMsg" class="muted"></span></div>
         <div id="cmList" style="margin-top:8px"></div>
       </div>
-      <div class="card">
+      <div class="card" data-sub-panel="refs">
         <h3>Referral rewards</h3>
         <div class="muted">When a shop brings another shop, record it here. Once the new shop has paid, give the referrer free days with one click.</div>
         <div class="grid" style="margin-top:6px">
@@ -185,7 +233,7 @@
         <div class="row"><button class="act primary" id="rfSave">Record referral</button><span id="rfMsg" class="muted"></span></div>
         <div class="scroll" style="margin-top:8px;max-height:280px"><table id="rfTable"></table></div>
       </div>
-      <div class="card">
+      <div class="card" data-sub-panel="notice">
         <h3>Notice to a group of shops</h3>
         <div class="muted">Shows in the dashboard of every shop in the group, as your Notice does for one shop. It stays until cleared, so clear it when the offer ends.</div>
         <div class="grid" style="margin-top:6px"><div><label>Group</label><select id="gnSeg"></select></div></div>
@@ -195,6 +243,7 @@
     </section>
 
     <section id="tab-customers" class="hidden">
+      <div class="pagehead"><h2>Customers</h2><p>Every shop, its plan, and what you can do for it.</p></div>
       <div class="stats" id="stats"></div>
       <div class="card">
         <div class="row" style="margin-top:0">
@@ -221,6 +270,7 @@
 
     <!-- SUPPORT -->
     <section id="tab-support" class="hidden">
+      <div class="pagehead"><h2>Support</h2><p>Questions and problems sent by customers from the app.</p></div>
       <div class="card">
         <select id="ticketFilter">
           <option value="open">Waiting for reply</option>
@@ -234,21 +284,25 @@
 
     <!-- PAYMENTS / REVENUE -->
     <section id="tab-revenue" class="hidden">
+      <div class="pagehead"><h2>Payments</h2><p>What customers have paid, and every change made in the admin.</p></div>
       <div class="stats" id="revStats"></div>
-      <div class="card"><h3>Revenue by month</h3><div id="revMonths"></div></div>
-      <div class="card">
+      <div class="subtabs"><button data-sub="list" class="on">Payments</button><button data-sub="months">Revenue by month</button><button data-sub="audit">Change log</button></div>
+      <div class="card" data-sub-panel="months"><h3>Revenue by month</h3><div id="revMonths"></div></div>
+      <div class="card" data-sub-panel="list">
         <div class="row" style="margin-top:0">
           <div class="grow" style="flex:2"><input id="paySearch" placeholder="Search payments by business or reference"></div>
           <button class="act" id="exportPayments">Export CSV</button>
         </div>
         <div class="scroll" style="margin-top:8px;max-height:420px"><table id="payTable"></table></div>
       </div>
-      <div class="card"><h3>Recent changes (audit log)</h3><div class="scroll" style="max-height:320px"><table id="auditTable"></table></div></div>
+      <div class="card" data-sub-panel="audit"><h3>Recent changes (audit log)</h3><div class="scroll" style="max-height:320px"><table id="auditTable"></table></div></div>
     </section>
 
     <!-- REACH OUT -->
     <section id="tab-broadcast" class="hidden">
-      <div class="card">
+      <div class="pagehead"><h2>Marketing</h2><p>Message templates for one-tap WhatsApp and a record of what you sent.</p></div>
+      <div class="subtabs"><button data-sub="tpl" class="on">Templates</button><button data-sub="log">Sent messages</button><button data-sub="rem">Renewal reminders</button></div>
+      <div class="card" data-sub-panel="tpl">
         <h3>Message templates</h3>
         <div class="muted">Used for every one-tap WhatsApp button in the admin. Fill-ins: {name} {business} {owner} {town} {date} {link} {price}. You still press send in WhatsApp. Send to people you know or who asked about Owi; WhatsApp can ban numbers that message strangers in bulk.</div>
         <div id="tplList" style="margin-top:8px"></div>
@@ -257,15 +311,22 @@
         <textarea id="sigText" rows="4"></textarea>
         <div class="row"><button class="act primary" id="sigSave">Save signature</button><span id="sigMsg" class="muted"></span></div>
       </div>
-      <div class="card"><h3>Messages sent from here (last 100)</h3><div class="scroll" style="max-height:300px"><table id="outTable"></table></div></div>
-      <div class="card">
-        <h3>Announcement to every customer's app</h3>
-        <div class="muted">Shows as a blue banner on the dashboard of every business. Users can dismiss it for the session.</div>
-        <textarea id="annText" rows="3" placeholder="e.g. The app will be updated tonight 10 PM. Please keep your phone online."></textarea>
-        <label class="sel"><input type="checkbox" id="annActive"> Show this announcement</label>
-        <div class="row"><button class="act primary" id="annSave">Save announcement</button><span id="annMsg" class="muted"></span></div>
+      <div class="card" data-sub-panel="log"><h3>Messages sent from here (last 100)</h3><div class="scroll" style="max-height:300px"><table id="outTable"></table></div></div>
+      <div class="card" data-sub-panel="rem">
+        <h3>Reminders: renewals and approvals</h3>
+        <div class="muted">Customers expiring within 7 days, expired in the last 30 days, or waiting for approval. Each button opens WhatsApp with the message filled in. You still press send.</div>
+        <label>Message template (use {owner}, {business}, {date}, {status})</label>
+        <textarea id="tpl" rows="4"></textarea>
+        <div id="reminders" style="margin-top:10px"></div>
       </div>
-      <div class="card">
+    </section>
+
+    <!-- APP SETTINGS -->
+    <section id="tab-appcfg" class="hidden">
+      <div class="pagehead"><h2>App settings</h2><p>Update the app for your customers and show an announcement in it.</p></div>
+      <div class="subtabs"><button data-sub="upd" class="on">App updates</button><button data-sub="ann">Announcement</button></div>
+      <div class="subtabs"><button data-sub="upd" class="on">App updates</button><button data-sub="ann">Announcement</button></div>
+      <div class="card" data-sub-panel="upd">
         <h3>App updates</h3>
         <div class="muted">The app checks this when a user opens the dashboard. Below the minimum build number, the app is blocked until they update. Below the latest, it only shows a small "new version" banner. Leave minimum at 0 to never block. Raise the build number (versionCode in the app) with every release.</div>
         <label>Minimum build number allowed (blocks older apps)</label><input id="appMin" inputmode="numeric" placeholder="e.g. 2">
@@ -276,23 +337,25 @@
         <div class="row"><button class="act primary" id="appSave">Save app update settings</button><span id="appCfgMsg" class="muted"></span></div>
         <div id="appVersions" class="muted" style="margin-top:10px"></div>
       </div>
-      <div class="card">
-        <h3>Reminders: renewals and approvals</h3>
-        <div class="muted">Customers expiring within 7 days, expired in the last 30 days, or waiting for approval. Each button opens WhatsApp with the message filled in. You still press send.</div>
-        <label>Message template (use {owner}, {business}, {date}, {status})</label>
-        <textarea id="tpl" rows="4"></textarea>
-        <div id="reminders" style="margin-top:10px"></div>
+      <div class="card" data-sub-panel="ann">
+        <h3>Announcement to every customer's app</h3>
+        <div class="muted">Shows as a blue banner on the dashboard of every business. Users can dismiss it for the session.</div>
+        <textarea id="annText" rows="3" placeholder="e.g. The app will be updated tonight 10 PM. Please keep your phone online."></textarea>
+        <label class="sel"><input type="checkbox" id="annActive"> Show this announcement</label>
+        <div class="row"><button class="act primary" id="annSave">Save announcement</button><span id="annMsg" class="muted"></span></div>
       </div>
     </section>
 
     <!-- STORAGE -->
     <section id="tab-storage" class="hidden">
-      <div class="card">
+      <div class="pagehead"><h2>Storage</h2><p>How much of the free space is used on GitHub and Firebase.</p></div>
+      <div class="subtabs"><button data-sub="gh" class="on">GitHub</button><button data-sub="fb">Firebase</button><button data-sub="proj">Projection</button></div>
+      <div class="card" data-sub-panel="gh">
         <h3>GitHub (website, downloads and videos)</h3>
         <div class="muted">Exact figures from GitHub's public data. Updates every time you open this tab.</div>
         <div id="ghBox" style="margin-top:10px" class="muted">Not loaded yet.</div>
       </div>
-      <div class="card">
+      <div class="card" data-sub-panel="fb">
         <h3>Firebase Realtime Database (all shop data and photos)</h3>
         <div class="muted">Firebase does not let a web page read its own usage meter, so this is an <b>estimate</b>: it counts the records of every business and measures a small sample of each kind. Treat it as accurate to roughly &plusmn;25%. The exact figure is always on the Firebase usage page.</div>
         <div class="row">
@@ -302,7 +365,7 @@
         <div id="fbBox" style="margin-top:10px" class="muted">Press Measure now. It downloads a small sample from every business (usually a few MB) and counts against the free monthly download allowance, so use it when you need it, not all day.</div>
       </div>
 
-    <div class="card" id="pjCard">
+    <div class="card" id="pjCard" data-sub-panel="proj">
       <h3>Projection against the free Spark limits</h3>
       <div class="muted">Free limits for Realtime Database (from Firebase pricing): 1 GB stored, 10 GB downloaded a month, 100 phones connected at once. This looks forward from today's estimate using how fast your shops add bills, so press <b>Measure now</b> first. It is a model with assumptions you can change, not a promise.</div>
       <div class="grid" style="margin-top:8px">
@@ -318,6 +381,7 @@
 
     <!-- PAYMENT DETAILS -->
     <section id="tab-payment" class="hidden">
+      <div class="pagehead"><h2>Payment details</h2><p>What customers see when they pay you.</p></div>
       <div class="card">
         <h3>Payment details shown to customers</h3>
         <label>UPI ID</label><input id="pUpi">
@@ -334,6 +398,8 @@
         <div id="payMsg" class="muted" style="margin-top:8px"></div>
       </div>
     </section>
+    </div>
+    </div>
   </div>
 </main>
 
@@ -388,14 +454,14 @@ $('refresh').onclick = () => loadBusinesses();
 
 auth.onAuthStateChanged(async user => {
   listeners.forEach(([ref, fn]) => ref.off('value', fn)); listeners = [];
-  if (!user) { $('login').classList.remove('hidden'); $('app').classList.add('hidden'); $('logout').classList.add('hidden'); $('refresh').classList.add('hidden'); $('who').textContent=''; return; }
+  if (!user) { $('login').classList.remove('hidden'); $('app').classList.add('hidden'); $('logout').classList.add('hidden'); $('refresh').classList.add('hidden'); $('menuBtn').classList.add('hidden'); $('who').textContent=''; return; }
   const snap = await db.ref('admins/' + user.uid).get().catch(() => null);
   if (!snap || snap.val() !== true) {
     $('loginErr').textContent = 'This account is not an admin.';
     await auth.signOut();
     return;
   }
-  $('login').classList.add('hidden'); $('app').classList.remove('hidden'); $('logout').classList.remove('hidden'); $('refresh').classList.remove('hidden');
+  $('login').classList.add('hidden'); $('app').classList.remove('hidden'); $('logout').classList.remove('hidden'); $('refresh').classList.remove('hidden'); $('menuBtn').classList.remove('hidden');
   $('who').textContent = user.email;
   listen('subscriptions', v => { subs = Object.entries(v || {}).map(([id, s]) => ({ id, ...s })); renderAll(); });
   listen('supportTickets', v => { tickets = Object.entries(v || {}).map(([id, t]) => ({ id, ...t })); renderAll(); });
@@ -421,10 +487,10 @@ async function loadBusinesses() {
 }
 
 // ---------- tabs ----------
-document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
+document.querySelectorAll('.side button[data-tab]').forEach(b => b.onclick = () => { showTab(b.dataset.tab); closeMenu(); window.scrollTo(0, 0); });
 function showTab(t) {
-  document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x.dataset.tab === t));
-  ['today', 'customers', 'usage', 'leads', 'sales', 'promos', 'broadcast', 'support', 'revenue', 'payment', 'storage'].forEach(n => $('tab-' + n).classList.toggle('hidden', n !== t));
+  document.querySelectorAll('.side button[data-tab]').forEach(x => x.classList.toggle('on', x.dataset.tab === t));
+  ['today', 'customers', 'usage', 'leads', 'sales', 'promos', 'broadcast', 'support', 'revenue', 'payment', 'appcfg', 'storage'].forEach(n => $('tab-' + n).classList.toggle('hidden', n !== t));
   if (t === 'storage') loadGithub();
 }
 function renderAll() { renderCustomers(); renderTickets(); renderRevenue(); renderReminders(); if (typeof renderGrowth === 'function') renderGrowth(); maybeSnapshot(); }
@@ -1163,6 +1229,7 @@ function renderToday() {
   });
   const open = tickets.filter(t => t.status !== 'closed' && t.status !== 'resolved').length;
   const attention = items.filter(i => !i.out || now - i.out > 3 * DAY).length;
+  $('navToday').textContent = attention || '';
   $('todayStats').innerHTML = `<div class="stat"><b>${attention}</b>people to contact today</div><div class="stat"><b>${open}</b>open support tickets</div><div class="stat"><b>${subs.filter(s => statusOf(s) === 'pending').length}</b>awaiting approval</div><div class="stat"><b>${leads.filter(l => l.status !== 'won' && l.status !== 'lost').length}</b>open leads</div>`;
   const groups = {}; items.forEach(i => (groups[i.group] = groups[i.group] || []).push(i));
   const html = Object.entries(groups).map(([g, arr]) => `<div class="card"><h3>${esc(g)} <span class="muted">(${arr.length})</span></h3>
@@ -1430,6 +1497,17 @@ document.addEventListener('click', async e => {
   else if (a === 'tpl-reset') db.ref('msgTemplates/' + id).remove();
   else if (a === 'tpl-del') { if (confirm('Delete this template?')) db.ref('msgTemplates/' + id).remove(); }
 });
+
+// ---------- layout helpers: sub-tabs and mobile menu ----------
+function setSub(sec, key) {
+  sec.querySelectorAll('.subtabs [data-sub]').forEach(x => x.classList.toggle('on', x.dataset.sub === key));
+  sec.querySelectorAll('[data-sub-panel]').forEach(p => p.classList.toggle('hidden', p.dataset.subPanel !== key));
+}
+document.addEventListener('click', e => { const b = e.target.closest('.subtabs [data-sub]'); if (b) setSub(b.closest('section'), b.dataset.sub); });
+document.querySelectorAll('section[id^="tab-"]').forEach(sec => { const first = sec.querySelector('.subtabs [data-sub]'); if (first) setSub(sec, first.dataset.sub); });
+function closeMenu() { $('side').classList.remove('open'); $('scrim').classList.remove('show'); }
+$('menuBtn').onclick = () => { $('side').classList.toggle('open'); $('scrim').classList.toggle('show'); };
+$('scrim').onclick = closeMenu;
 </script>
 </body>
 </html>
